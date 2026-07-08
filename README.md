@@ -1,137 +1,269 @@
-# YaTracing - İnşaat Takip Uygulaması
+# 🏗️ YaTracing - Construction Management Platform
 
-🏗️ Profesyonel inşaat firmalarına yönelik kapsamlı takip ve yönetim uygulaması.
+**YaTracing**, inşaat projelerini, ekipleri, malzemeleri ve ekipmanları yönetmek için modern, tam yığın bir platform.
 
-## Özellikler
+## 🌟 Özellikler
 
-- ✅ **Proje Yönetimi**: İnşaat projelerini takip et, vadeler ve bütçe yönet
-- ✅ **Ekip Yönetimi**: İşçileri ve ekipleri organize et
-- ✅ **Malzeme Takibi**: Tedarik zincirini yönet
-- ✅ **İş Makineleri**: Ekipman takibi
-- ✅ **Fotoğraf/Belge**: Proje belgelerini depolama
-- ✅ **Gerçek Zamanlı**: Socket.io ile live updates
-- ✅ **Harita Entegrasyonu**: GPS tabanlı konum takibi
-- ✅ **Raporlama**: Kapsamlı analitikler ve raporlar
-- ✅ **Bildirim**: Anlık bildirimler
-- ✅ **Web & Mobil**: React web app + React Native mobil app
+- ✅ **Proje Yönetimi**: Projeler oluştur, izle ve yönet
+- ✅ **Ekip Yönetimi**: Ekipler ve üyeler ekle
+- ✅ **Malzeme Takibi**: Envanteri yönet
+- ✅ **Ekipman Yönetimi**: Bakım ve durum takibi
+- ✅ **Raporlar**: Özel raporlar oluştur
+- ✅ **Gerçek Zamanlı Updates**: Socket.io ile canlı güncellemeler
+- ✅ **Responsive Tasarım**: Web ve Mobile desteği
+- ✅ **JWT Authentication**: Güvenli oturum yönetimi
 
-## Proje Yapısı (Monorepo)
+## 🏗️ Mimari
 
 ```
 YaTracing/
 ├── packages/
 │   ├── backend/          # Node.js + Express API
-│   ├── web/              # React Web Application
-│   └── mobile/           # React Native Mobile App
-├── docker-compose.yml    # Docker services
-├── package.json          # Monorepo root
+│   ├── web/              # React Web App
+│   ├── mobile/           # React Native Mobile App
+│   └── todo-app/         # (Gelecek)
+├── docker-compose.yml    # Docker setup
 └── README.md
 ```
 
-## Teknoloji Stack
+## 🚀 Hızlı Başlangıç
+
+### Gereksinimler
+- Node.js 16+
+- PostgreSQL 13+
+- Redis (opsiyonel)
+- Docker & Docker Compose
+
+### Docker ile Başlat (En Kolay)
+
+```bash
+git clone https://github.com/begga1229/YaTracing.git
+cd YaTracing
+
+# Tüm servisleri başlat
+docker-compose up -d
+
+# Database migration
+docker-compose exec backend npm run migrate
+```
+
+**Erişim:**
+- Web App: http://localhost:3000
+- Backend API: http://localhost:5000
+- PostgreSQL: localhost:5432
+- Redis: localhost:6379
+
+### Manuel Kurulum
+
+#### 1️⃣ Backend Başlat
+
+```bash
+cd packages/backend
+npm install
+cp .env.example .env
+npm run dev
+```
+
+Server şu adresinde: `http://localhost:5000`
+
+#### 2️⃣ Web App Başlat
+
+```bash
+cd packages/web
+npm install
+npm start
+```
+
+Browser: `http://localhost:3000`
+
+#### 3️⃣ Mobile App Başlat
+
+```bash
+cd packages/mobile
+npm install
+npm start
+# iOS: `i` | Android: `a`
+```
+
+## 📚 API Endpoints
+
+### Authentication
+- `POST /api/auth/register` - Kayıt ol
+- `POST /api/auth/login` - Giriş yap
+- `GET /api/auth/verify` - Token doğrula
+
+### Projects
+- `GET /api/projects` - Tüm projeleri listele
+- `GET /api/projects/:id` - Proje detayı
+- `POST /api/projects` - Yeni proje oluştur
+- `PUT /api/projects/:id` - Projeyi güncelle
+- `DELETE /api/projects/:id` - Projeyi sil
+
+### Teams
+- `GET /api/teams` - Tüm ekipleri listele
+- `POST /api/teams` - Yeni ekip oluştur
+- `PUT /api/teams/:id` - Ekibi güncelle
+- `DELETE /api/teams/:id` - Ekibi sil
+
+### Materials
+- `GET /api/materials` - Malzemeleri listele
+- `POST /api/materials` - Malzeme ekle
+- `PUT /api/materials/:id` - Malzemeyi güncelle
+- `DELETE /api/materials/:id` - Malzemeyi sil
+
+### Equipment
+- `GET /api/equipment` - Ekipmanları listele
+- `POST /api/equipment` - Ekipman ekle
+- `PUT /api/equipment/:id` - Ekipmanı güncelle
+- `DELETE /api/equipment/:id` - Ekipmanı sil
+
+### Reports
+- `GET /api/reports` - Raporları listele
+- `POST /api/reports` - Rapor oluştur
+- `PUT /api/reports/:id` - Raporu güncelle
+- `DELETE /api/reports/:id` - Raporu sil
+
+## 🧪 Testing
+
+### Backend Tests
+
+```bash
+cd packages/backend
+npm test
+```
+
+### Postman Collection
+
+Postman'da yapılacaklar: https://www.postman.com/yatracing
+
+## 🔧 Ortam Değişkenleri
+
+### Backend (.env)
+
+```env
+PORT=5000
+NODE_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=yatracing
+DB_USER=postgres
+DB_PASSWORD=password
+JWT_SECRET=your-secret-key
+CORS_ORIGIN=http://localhost:3000
+REDIS_URL=redis://localhost:6379
+```
+
+### Web App (.env)
+
+```env
+REACT_APP_API_URL=http://localhost:5000/api
+REACT_APP_SOCKET_URL=http://localhost:5000
+```
+
+### Mobile App (.env)
+
+```env
+REACT_APP_API_URL=http://your-api-url:5000/api
+REACT_APP_SOCKET_URL=http://your-api-url:5000
+```
+
+## 📦 Teknoloji Stack
 
 ### Backend
-- **Node.js** + **Express.js**
-- **PostgreSQL** (Database)
-- **Socket.io** (Real-time updates)
-- **JWT** (Authentication)
-- **Multer** (File uploads)
-- **Sequelize** (ORM)
+- **Runtime**: Node.js
+- **Framework**: Express.js
+- **Database**: PostgreSQL
+- **ORM**: Sequelize
+- **Cache**: Redis
+- **Real-time**: Socket.io
+- **Auth**: JWT, bcryptjs
 
-### Frontend (Web)
-- **React** 18+
-- **TypeScript**
-- **Redux** (State Management)
-- **Leaflet** (Maps)
-- **Axios** (HTTP Client)
-- **Tailwind CSS** (Styling)
+### Web
+- **Framework**: React 18
+- **State Management**: Redux Toolkit
+- **HTTP Client**: Axios
+- **Routing**: React Router v6
+- **Styling**: CSS3
 
 ### Mobile
-- **React Native**
-- **TypeScript**
-- **Redux**
-- **React Navigation**
-- **React Native Maps**
+- **Framework**: React Native
+- **Expo**: Mobile SDK
+- **Navigation**: React Navigation
+- **State**: Redux
 
-## Başlangıç
-
-### Gereklilikler
-- Node.js 18+
-- npm 9+
-- PostgreSQL 14+
-- Docker & Docker Compose (opsiyonel)
+## 🐳 Docker
 
 ### Kurulum
 
 ```bash
-# Repository klonla
-git clone https://github.com/begga1229/YaTracing.git
-cd YaTracing
-
-# Dependencies yükle
-npm install
-
-# Environment variables ayarla
-cp packages/backend/.env.example packages/backend/.env
-cp packages/web/.env.example packages/web/.env
-
-# Veritabanı migration'larını çalıştır
-cd packages/backend
-npm run db:migrate
-
-# Tüm uygulamaları başlat
-cd ../..
-npm run dev
-```
-
-### Docker ile Başlat
-
-```bash
-docker-compose up -d
-```
-
-## Komutlar
-
-```bash
-# Tümünü develop modda çalıştır
-npm run dev
-
-# Backend
-cd packages/backend && npm run dev
-
-# Web
-cd packages/web && npm start
-
-# Mobile
-cd packages/mobile && npm start
-
-# Tüm testleri çalıştır
-npm run test
-
 # Build
-npm run build
+docker-compose build
+
+# Çalıştır
+docker-compose up -d
+
+# Loglar
+docker-compose logs -f backend
+
+# Durdur
+docker-compose down
 ```
 
-## API Dokumentasyonu
+## 📖 Geliştirme
 
-Detaylı API dokumentasyonu için `/packages/backend/API.md` dosyasını kontrol edin.
+### Proje Yapısı
 
-## Database Schema
+```
+packages/backend/
+├── src/
+│   ├── config/        # Veritabanı konfigürasyonu
+│   ├── models/        # Sequelize modelleri
+│   ├── controllers/    # İş mantığı
+│   ├── routes/        # API routes
+│   ├── middleware/     # Custom middleware
+│   └── index.js       # Server giriş noktası
+���── .env.example
+└── package.json
 
-Detaylı schema tasarımı için `/packages/backend/schema.md` dosyasını kontrol edin.
+packages/web/
+├── src/
+│   ├── components/    # React bileşenleri
+│   ├── pages/         # Sayfa bileşenleri
+│   ├── redux/         # State management
+│   ├── services/      # API servisleri
+│   ├── App.js
+│   └── index.js
+└── package.json
+```
 
-## Katkıda Bulunma
+## 🤝 Katkı
 
-1. Feature branch oluştur (`git checkout -b feature/AmazingFeature`)
-2. Değişiklikleri commit et (`git commit -m 'Add AmazingFeature'`)
-3. Branch'i push et (`git push origin feature/AmazingFeature`)
-4. Pull Request aç
+1. Fork et
+2. Branch oluştur (`git checkout -b feature/amazing-feature`)
+3. Commit et (`git commit -m 'Add amazing feature'`)
+4. Push et (`git push origin feature/amazing-feature`)
+5. Pull Request aç
 
-## Lisans
+## 📄 Lisans
 
-MIT License - Detaylar için LICENSE dosyasını kontrol edin.
+Bu proje MIT Lisansı altında lisanslanmıştır.
 
-## İletişim
+## 📞 İletişim
 
-📧 Email: info@yatracing.com
-🌐 Website: https://yatracing.com
+- **GitHub**: [@begga1229](https://github.com/begga1229)
+- **Email**: begga1229@icloud.com
+
+## 🎯 Gelecek Özellikler
+
+- [ ] Weather Dashboard entegrasyonu
+- [ ] To-Do List modulü
+- [ ] Advanced Analytics
+- [ ] Budget Forecasting
+- [ ] Mobile App iyileştirmeleri
+- [ ] Multi-language support
+- [ ] Dark mode
+- [ ] Offline support
+
+---
+
+**Made with ❤️ by [@begga1229](https://github.com/begga1229)**
