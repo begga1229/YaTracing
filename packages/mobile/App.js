@@ -7,6 +7,7 @@ import store from './src/redux/store';
 import Dashboard from './src/screens/Dashboard';
 import Projects from './src/screens/Projects';
 import Teams from './src/screens/Teams';
+import Metraj from './src/screens/Metraj';
 import Profile from './src/screens/Profile';
 
 const Stack = createNativeStackNavigator();
@@ -18,6 +19,7 @@ function TabNavigator() {
       <Tab.Screen name="Dashboard" component={Dashboard} />
       <Tab.Screen name="Projects" component={Projects} />
       <Tab.Screen name="Teams" component={Teams} />
+      <Tab.Screen name="Metraj" component={Metraj} />
       <Tab.Screen name="Profile" component={Profile} />
     </Tab.Navigator>
   );

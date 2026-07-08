@@ -15,6 +15,7 @@ const Sidebar = () => {
         <Link to="/materials" className="nav-item">📦 Malzemeler</Link>
         <Link to="/equipment" className="nav-item">🚜 Ekipmanlar</Link>
         <Link to="/reports" className="nav-item">📈 Raporlar</Link>
+        <Link to="/metraj" className="nav-item">📐 Metraj</Link>
       </nav>
     </aside>
   );

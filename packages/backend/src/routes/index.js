@@ -5,6 +5,7 @@ import teamRoutes from './teams.js';
 import materialRoutes from './materials.js';
 import equipmentRoutes from './equipment.js';
 import reportRoutes from './reports.js';
+import takeoffRoutes from './takeoffs.js';
 
 const router = express.Router();
 
@@ -14,6 +15,7 @@ router.use('/teams', teamRoutes);
 router.use('/materials', materialRoutes);
 router.use('/equipment', equipmentRoutes);
 router.use('/reports', reportRoutes);
+router.use('/takeoffs', takeoffRoutes);
 
 router.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date() });

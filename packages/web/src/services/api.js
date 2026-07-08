@@ -63,4 +63,18 @@ export const reportAPI = {
   delete: (id) => apiClient.delete(`/reports/${id}`),
 };
 
+// Metraj (AI quantity takeoff)
+export const takeoffAPI = {
+  getAll: () => apiClient.get('/takeoffs'),
+  getById: (id) => apiClient.get(`/takeoffs/${id}`),
+  analyze: (formData) =>
+    apiClient.post('/takeoffs/analyze', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }),
+  update: (id, data) => apiClient.put(`/takeoffs/${id}`, data),
+  delete: (id) => apiClient.delete(`/takeoffs/${id}`),
+  downloadExcel: (id) =>
+    apiClient.get(`/takeoffs/${id}/excel`, { responseType: 'blob' }),
+};
+
 export default apiClient;

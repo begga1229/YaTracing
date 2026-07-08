@@ -1,0 +1,180 @@
+.metraj {
+  padding: 24px;
+  max-width: 1100px;
+}
+
+.metraj h1 {
+  margin-bottom: 8px;
+}
+
+.metraj-sub {
+  color: #555;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.metraj-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  background: #f7f9fb;
+  padding: 20px;
+  border-radius: 10px;
+  border: 1px solid #e3e8ee;
+  margin-bottom: 20px;
+}
+
+.metraj-form .field {
+  display: flex;
+  flex-direction: column;
+}
+
+.metraj-form label {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #2c3e50;
+}
+
+.metraj-form input {
+  padding: 9px 10px;
+  border: 1px solid #cbd5e0;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.metraj-form button {
+  grid-column: 1 / -1;
+  padding: 12px;
+  background: #2c3e50;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.metraj-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.metraj-error {
+  background: #fdecea;
+  color: #b71c1c;
+  padding: 12px 14px;
+  border-radius: 6px;
+  margin-bottom: 16px;
+}
+
+.metraj-result {
+  background: #fff;
+  border: 1px solid #e3e8ee;
+  border-radius: 10px;
+  padding: 18px;
+  margin-bottom: 28px;
+}
+
+.result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.result-head h2 {
+  margin: 0 0 6px;
+}
+
+.badge {
+  display: inline-block;
+  background: #e8f0fe;
+  color: #1a56db;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.scale {
+  color: #666;
+  font-size: 13px;
+}
+
+.excel-btn {
+  background: #1e7e34;
+  color: #fff;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.warnings {
+  background: #fff8e1;
+  border: 1px solid #ffe082;
+  border-radius: 6px;
+  padding: 10px 14px 10px 28px;
+  margin-bottom: 14px;
+  color: #7a5c00;
+}
+
+.metraj-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 8px;
+}
+
+.metraj-table th,
+.metraj-table td {
+  border: 1px solid #e3e8ee;
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 14px;
+}
+
+.metraj-table th {
+  background: #2c3e50;
+  color: #fff;
+  font-weight: 600;
+}
+
+.metraj-table td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.metraj-table td.empty {
+  text-align: center;
+  color: #888;
+  padding: 16px;
+}
+
+.actions button {
+  margin-right: 6px;
+  padding: 5px 10px;
+  border: 1px solid #cbd5e0;
+  background: #fff;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.actions button.danger {
+  color: #b71c1c;
+  border-color: #f0b3b3;
+}
+
+.list-title {
+  margin: 10px 0 12px;
+}
+
+@media (max-width: 720px) {
+  .metraj-form {
+    grid-template-columns: 1fr;
+  }
+}
