@@ -52,9 +52,13 @@ const Metraj = () => {
   };
 
   const handleDownload = async (id, tName) => {
+    setError('');
     try {
       const res = await takeoffAPI.downloadExcel(id);
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const blob = new Blob([res.data], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${(tName || 'metraj').replace(/[^a-z0-9_\-]+/gi, '_')}.xlsx`;
@@ -63,7 +67,20 @@ const Metraj = () => {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (e) {
-      setError('Excel indirilemedi. Giris yapmis olmaniz gerekebilir.');
+      // responseType 'blob' oldugundan hata govdesi de Blob gelir; JSON mesajini coz
+      let msg = 'Excel indirilemedi.';
+      try {
+        const data = e.response?.data;
+        if (data instanceof Blob) {
+          const text = await data.text();
+          msg = JSON.parse(text).message || msg;
+        } else if (data?.message) {
+          msg = data.message;
+        }
+      } catch (_) {
+        /* mesaj cozulemedi, genel mesaji goster */
+      }
+      setError(`Excel indirilemedi: ${msg}`);
     }
   };
 

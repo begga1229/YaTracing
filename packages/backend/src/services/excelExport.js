@@ -36,6 +36,17 @@ export const buildMetrajExcel = async (takeoff) => {
   ws.getCell('E4').font = { bold: true };
   ws.getCell('F4').value = new Date().toLocaleString('tr-TR');
 
+  // Toplam beton (m3) - ozet bilgisi (varsa summary.totals'dan, yoksa kalemlerden)
+  const volFromItems = (takeoff.items || [])
+    .filter((it) => /m3|m³/i.test(it.unit || ''))
+    .reduce((s, it) => s + (Number(it.quantity) || 0), 0);
+  const totalBeton = takeoff.summary?.totals?.volume_m3 ?? volFromItems;
+  ws.getCell('C4').value = 'Toplam Beton (m3):';
+  ws.getCell('C4').font = { bold: true, color: { argb: 'FF1E7E34' } };
+  ws.getCell('D4').value = Math.round(totalBeton * 1000) / 1000;
+  ws.getCell('D4').numFmt = '#,##0.000';
+  ws.getCell('D4').font = { bold: true, color: { argb: 'FF1E7E34' } };
+
   // Tablo basligi (5. satir)
   const headerRow = ws.getRow(5);
   const headers = ['No', 'Poz / Eleman', 'Kategori', 'Katman / Not', 'Miktar', 'Birim', 'Birim Fiyat', 'Tutar'];

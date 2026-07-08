@@ -53,7 +53,15 @@ Sana verilen insaat cizimini (mimari/statik pafta) dikkatle incele ve metraj cik
 
 Kurallar:
 - Once cizimdeki olcek etiketini (or. 1:50, 1:100) ve olcu cizgilerini/kotalarini bul.
-- Duvar/eksen uzunluklarini "m", doseme/alan bilgilerini "m2", kolon/kiris/donati hacmini "m3", kapi/pencere/kolon gibi elemanlari "adet" olarak hesapla.
+- Duvar/eksen uzunluklarini "m", doseme/alan bilgilerini "m2", elemanlari (kapi/pencere) "adet" olarak hesapla.
+- BETON metrajini MUTLAKA HACIM olarak "m3" biriminde ver. Betonarme elemanlar:
+  * Kolon: en x boy x yukseklik (or. 0.40 x 0.40 x 3.00 = 0.48 m3), adetle carp.
+  * Kiris/hatil/lento: genislik x yukseklik x uzunluk.
+  * Doseme/temel/radye: alan x kalinlik (kalinlik yoksa makul varsay ve "note"a yaz).
+  * Perde duvar: uzunluk x kalinlik x yukseklik.
+  Bu kalemlerde "category" = "Hacim", "unit" = "m3" olmali. Her beton kaleminin kesit
+  olculerini ve varsayimlarini "note" alanina yaz (or. "0.40x0.40x3.00 m, 6 adet").
+- Toplam beton miktarini m3 cinsinden dusunerek kalemleri buna gore ayir.
 - Her kalem icin makul bir varsayim yaptiysan "note" alanina yaz.
 - Okunamayan veya belirsiz olan seyleri "warnings" listesine ekle; uydurma deger URETME.
 - Cizimde olcek yoksa bunu acikca uyari olarak belirt ve miktarlari orantisal/tahmini oldugu notuyla ver.
@@ -140,14 +148,27 @@ export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instr
     throw new Error('Model ciktisi cozumlenemedi (gecersiz JSON).');
   }
 
+  const isVolumeUnit = (u = '') => /m3|m³/i.test(u);
   const items = (parsed.items || []).map((it) => ({
     name: it.name || 'Eleman',
     category: it.category || 'Diger',
     layer: it.note || '',
     quantity: Number(it.quantity) || 0,
-    unit: it.unit || 'adet',
+    // Birimleri normalize et: m³/M3 -> m3, m² -> m2
+    unit: isVolumeUnit(it.unit) ? 'm3' : (it.unit || 'adet').replace('m²', 'm2'),
     unitPrice: 0,
   }));
+
+  const round = (n) => Math.round(n * 1000) / 1000;
+  const totalVolume = items
+    .filter((i) => i.unit === 'm3')
+    .reduce((s, i) => s + i.quantity, 0);
+  const totalArea = items
+    .filter((i) => i.unit === 'm2')
+    .reduce((s, i) => s + i.quantity, 0);
+  const totalLength = items
+    .filter((i) => i.unit === 'm')
+    .reduce((s, i) => s + i.quantity, 0);
 
   return {
     scale: parsed.scale ? `Olcek: ${parsed.scale}` : 'Olcek: belirsiz (AI-tahmini)',
@@ -157,6 +178,11 @@ export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instr
       scaleRead: parsed.scale || 'belirsiz',
       notes: parsed.notes || '',
       warnings: parsed.warnings || [],
+      totals: {
+        length_m: round(totalLength),
+        area_m2: round(totalArea),
+        volume_m3: round(totalVolume),
+      },
       usage: response.usage,
     },
   };

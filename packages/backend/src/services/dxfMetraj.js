@@ -101,6 +101,13 @@ export const parseDxfMetraj = (dxfText, fileName = '') => {
     b.count += 1;
     buckets.set(key, b);
   };
+  const addVolume = (layer, cubicMeters) => {
+    const key = `${layer}||volume`;
+    const b = buckets.get(key) || { layer, metric: 'volume', value: 0, count: 0 };
+    b.value += cubicMeters;
+    b.count += 1;
+    buckets.set(key, b);
+  };
 
   for (const e of dxf.entities) {
     const layer = e.layer || '0';
@@ -119,14 +126,30 @@ export const parseDxfMetraj = (dxfText, fileName = '') => {
         const closed = Boolean(e.shape || e.closed);
         addLength(layer, polylineLength(verts, closed) * factor);
         if (closed && verts.length >= 3) {
-          addArea(layer, polygonArea(verts) * factor * factor);
+          const area = polygonArea(verts) * factor * factor;
+          addArea(layer, area);
+          // Ekstruzyon (thickness/kalinlik) varsa kapali poligon -> hacim (or. beton doseme/perde).
+          // dxf-parser LWPOLYLINE'da kod 39'u `depth` alanina koyar.
+          const th = Math.abs(e.thickness ?? e.depth ?? 0) * factor;
+          if (th > 0) addVolume(layer, area * th);
         }
         break;
       }
       case 'CIRCLE': {
         const r = (e.radius || 0);
+        const area = Math.PI * r * r * factor * factor;
         addLength(layer, 2 * Math.PI * r * factor); // cevre
-        addArea(layer, Math.PI * r * r * factor * factor);
+        addArea(layer, area);
+        const th = Math.abs(e.thickness || 0) * factor;
+        if (th > 0) addVolume(layer, area * th); // or. daire kesitli kolon
+        break;
+      }
+      case '3DFACE': {
+        // Uc/dort noktali yuzey -> alan (statik pafta, temel yuzeyleri)
+        const vs = e.vertices || [];
+        if (vs.length >= 3) {
+          addArea(layer, polygonArea(vs) * factor * factor);
+        }
         break;
       }
       case 'ARC': {
@@ -154,6 +177,16 @@ export const parseDxfMetraj = (dxfText, fileName = '') => {
         layer: b.layer,
         quantity: round(b.value),
         unit: 'm',
+        unitPrice: 0,
+        entities: b.count,
+      });
+    } else if (b.metric === 'volume') {
+      items.push({
+        name: `${b.layer} - Hacim (Beton)`,
+        category: 'Hacim',
+        layer: b.layer,
+        quantity: round(b.value),
+        unit: 'm3',
         unitPrice: 0,
         entities: b.count,
       });
@@ -190,6 +223,9 @@ export const parseDxfMetraj = (dxfText, fileName = '') => {
   const totalArea = items
     .filter((i) => i.unit === 'm2')
     .reduce((s, i) => s + i.quantity, 0);
+  const totalVolume = items
+    .filter((i) => i.unit === 'm3')
+    .reduce((s, i) => s + i.quantity, 0);
   const totalCount = items
     .filter((i) => i.unit === 'adet')
     .reduce((s, i) => s + i.quantity, 0);
@@ -214,6 +250,7 @@ export const parseDxfMetraj = (dxfText, fileName = '') => {
       totals: {
         length_m: round(totalLength),
         area_m2: round(totalArea),
+        volume_m3: round(totalVolume),
         count: totalCount,
       },
       warnings,
