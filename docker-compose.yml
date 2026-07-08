@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: yatracing-db
+    environment:
+      POSTGRES_USER: yatracing
+      POSTGRES_PASSWORD: yatracing123
+      POSTGRES_DB: yatracing_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - yatracing-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yatracing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: yatracing-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - yatracing-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./packages/backend
+      dockerfile: Dockerfile
+    container_name: yatracing-api
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgresql://yatracing:yatracing123@postgres:5432/yatracing_db
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: your-secret-key-change-in-production
+      PORT: 5000
+    ports:
+      - "5000:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - yatracing-network
+    volumes:
+      - ./packages/backend:/app
+      - /app/node_modules
+
+networks:
+  yatracing-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
