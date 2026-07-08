@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "YaTracing",
+    "slug": "yatracing",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {},
+    "web": {},
+    "extra": {
+      "comment": "apiUrl'i backend'in calistigi BILGISAYARIN yerel ag IP'si ile degistirin (or. http://192.168.1.100:5000/api). 'localhost' iPad'de CALISMAZ.",
+      "apiUrl": "http://192.168.1.100:5000/api"
+    }
+  }
+}
