@@ -9,6 +9,7 @@
 - ✅ **Malzeme Takibi**: Envanteri yönet
 - ✅ **Ekipman Yönetimi**: Bakım ve durum takibi
 - ✅ **Raporlar**: Özel raporlar oluştur
+- ✅ **📐 Metraj (Yapay Zeka)**: İnşaat çizimini oku, metraj (quantity takeoff) hesabı yap, Excel çıktısı al
 - ✅ **Gerçek Zamanlı Updates**: Socket.io ile canlı güncellemeler
 - ✅ **Responsive Tasarım**: Web ve Mobile desteği
 - ✅ **JWT Authentication**: Güvenli oturum yönetimi
@@ -123,6 +124,31 @@ npm start
 - `PUT /api/reports/:id` - Raporu güncelle
 - `DELETE /api/reports/:id` - Raporu sil
 
+### Metraj (AI Quantity Takeoff)
+- `POST /api/takeoffs/analyze` - Çizim yükle ve metraj çıkar (multipart: `file`, `name`, `projectId`, `instructions`)
+- `GET /api/takeoffs` - Metrajları listele (`?projectId=` ile filtrelenebilir)
+- `GET /api/takeoffs/:id` - Metraj detayı
+- `GET /api/takeoffs/:id/excel` - Metrajı **Excel (.xlsx)** olarak indir
+- `PUT /api/takeoffs/:id` - Metraj kalemlerini/birim fiyatı güncelle
+- `DELETE /api/takeoffs/:id` - Metrajı sil
+
+## 📐 Metraj Modülü (Hibrit AI Metraj)
+
+İnşaat çizimini okuyup metraj hesabı yapan ve Excel tablosu üreten modül. İki motor birlikte çalışır:
+
+| Çizim Türü | Motor | Sonuç |
+|------------|-------|-------|
+| **DXF** (AutoCAD) | Geometri (koordinatlardan) | Uzunluk/alan/adet **kesin** hesaplanır (katmanlara göre) |
+| **PDF / Görüntü** (PNG, JPG, WEBP) | **Claude Vision** | AI elemanları ve ölçeği okuyarak **tahmini** metraj çıkarır |
+
+**Kullanım:**
+1. Web'de sol menüden **📐 Metraj**, mobilde **Metraj** sekmesine gidin.
+2. Çizim dosyasını (DXF / PDF / JPG / PNG) yükleyin, "Metraj Çıkar"a basın.
+3. Sonuç tablosunu inceleyin ve **⬇️ Excel indir** ile `.xlsx` dosyasını bilgisayarınıza/telefonunuza indirin.
+
+**Kurulum notu:** PDF/görüntü analizi için backend `.env` dosyasına `ANTHROPIC_API_KEY` ekleyin
+([console.anthropic.com](https://console.anthropic.com/)). DXF metrajı API anahtarı olmadan da çalışır.
+
 ## 🧪 Testing
 
 ### Backend Tests
@@ -151,6 +177,10 @@ DB_PASSWORD=password
 JWT_SECRET=your-secret-key
 CORS_ORIGIN=http://localhost:3000
 REDIS_URL=redis://localhost:6379
+# Metraj (AI) - PDF/görüntü çizim analizi için
+ANTHROPIC_API_KEY=
+ANTHROPIC_MODEL=claude-opus-4-8
+MAX_UPLOAD_MB=25
 ```
 
 ### Web App (.env)

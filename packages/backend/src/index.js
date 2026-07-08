@@ -12,6 +12,7 @@ import Team from './models/Team.js';
 import Material from './models/Material.js';
 import Equipment from './models/Equipment.js';
 import Report from './models/Report.js';
+import Takeoff from './models/Takeoff.js';
 
 dotenv.config();
 

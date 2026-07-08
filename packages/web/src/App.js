@@ -7,6 +7,7 @@ import Teams from './pages/Teams';
 import Materials from './pages/Materials';
 import Equipment from './pages/Equipment';
 import Reports from './pages/Reports';
+import Metraj from './pages/Metraj';
 import './App.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
           <Route path="/materials" element={<Materials />} />
           <Route path="/equipment" element={<Equipment />} />
           <Route path="/reports" element={<Reports />} />
+          <Route path="/metraj" element={<Metraj />} />
         </Routes>
       </Layout>
     </Router>
