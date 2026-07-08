@@ -77,7 +77,11 @@ export const buildMetrajExcel = async (takeoff) => {
   const totalRow = ws.getRow(rowIdx + 1);
   totalRow.getCell(7).value = 'TOPLAM:';
   totalRow.getCell(7).font = { bold: true };
-  totalRow.getCell(8).value = grandTotal;
+  // Canli formul: kullanici Excel'de birim fiyati degistirince tutar ve toplam
+  // otomatik guncellenir (statik deger yerine SUM kullaniyoruz).
+  totalRow.getCell(8).value = items.length
+    ? { formula: `SUM(H6:H${rowIdx - 1})`, result: grandTotal }
+    : grandTotal;
   totalRow.getCell(8).numFmt = '#,##0.00';
   totalRow.getCell(8).font = { bold: true };
 
