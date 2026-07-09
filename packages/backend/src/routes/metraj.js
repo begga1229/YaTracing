@@ -1,6 +1,6 @@
 import express from 'express';
 import multer from 'multer';
-import { analyzePublic } from '../controllers/metrajServiceController.js';
+import { analyzePublic, concreteExcel } from '../controllers/metrajServiceController.js';
 
 const router = express.Router();
 
@@ -10,7 +10,8 @@ const upload = multer({
   limits: { fileSize: maxMb * 1024 * 1024 },
 });
 
-// Durumsuz, kimlik dogrulama gerektirmeyen public metraj ucu
+// Durumsuz, kimlik dogrulama gerektirmeyen public metraj uclari
 router.post('/analyze', upload.single('file'), analyzePublic);
+router.post('/concrete-excel', concreteExcel);
 
 export default router;

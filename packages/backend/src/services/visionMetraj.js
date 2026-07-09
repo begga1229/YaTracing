@@ -30,10 +30,11 @@ const METRAJ_SCHEMA = {
             description: 'Kategori: Uzunluk, Alan, Adet, Hacim vb.',
           },
           quantity: { type: 'number', description: 'Hesaplanan miktar' },
-          unit: { type: 'string', description: 'Birim: m, m2, m3, adet' },
-          note: { type: 'string', description: 'Varsayim veya aciklama (opsiyonel)' },
+          unit: { type: 'string', description: 'Birim: m, m2, m3, adet, ton' },
+          note: { type: 'string', description: 'HESAP FORMULU (or. "1.8·1.8·0.4·12") ve varsayimlar' },
+          concrete_class: { type: 'string', description: 'Beton sinifi (or. B20, B25, C20/25). Beton degilse bos birak.' },
         },
-        required: ['name', 'category', 'quantity', 'unit', 'note'],
+        required: ['name', 'category', 'quantity', 'unit', 'note', 'concrete_class'],
         additionalProperties: false,
       },
     },
@@ -81,7 +82,8 @@ Sana verilen insaat cizimini (mimari/statik pafta) dikkatle incele ve ELEMAN-ELE
   ASLA rastgele buyuk sayi uretme; emin degilsen dusuk/temkinli tahmin ver.
 
 ## Cikti
-- Her elemani ayri "items" kalemi olarak ver (formul "note"da).
+- Her elemani ayri "items" kalemi olarak ver. HESAP FORMULUNU "note" alanina yaz (or. "1.8·1.8·0.4·12").
+- Her BETON elemani icin "concrete_class" alanina beton sinifini yaz (or. B20, B25, C20/25); pafta belirtmiyorsa makul bir varsayim yap ve warnings'e ekle.
 - "notes" alanina: kullandigin olcek, kat alani ve toplam beton / kat alani oranini yaz.
 - Tum metin ciktilarini Turkce yaz.`;
 
@@ -170,6 +172,8 @@ export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instr
     name: it.name || 'Eleman',
     category: it.category || 'Diger',
     layer: it.note || '',
+    formula: it.note || '',
+    concreteClass: it.concrete_class || '',
     quantity: Number(it.quantity) || 0,
     unit: it.unit || 'adet',
     unitPrice: 0,
