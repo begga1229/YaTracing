@@ -1,0 +1,25 @@
+# Render.com tek-tik dagitim (deploy) yapilandirmasi.
+# Bu dosya sayesinde repoyu Render'a baglayip metraj servisini (backend + web arayuz)
+# tek adimda yayina alabilirsiniz. Dagitimdan sonra ANTHROPIC_API_KEY'i Render panelinden girin.
+#
+# Adimlar: render.com -> New -> Blueprint -> bu repoyu sec -> ANTHROPIC_API_KEY gir -> Deploy.
+services:
+  - type: web
+    name: yatracing-metraj
+    runtime: node
+    plan: free
+    rootDir: packages/backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: ANTHROPIC_API_KEY
+        sync: false        # gizli - Render panelinden elle girilir
+      - key: ANTHROPIC_MODEL
+        value: claude-opus-4-8
+      - key: MAX_UPLOAD_MB
+        value: "25"
+      - key: CORS_ORIGIN
+        value: "*"

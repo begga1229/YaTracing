@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#1C5B8A" />
+<title>YaTracing Metraj</title>
+</head>
+<body>
+<style>
+  :root {
+    --ground: #E9EDF2;
+    --surface: #FFFFFF;
+    --surface-2: #F3F6F9;
+    --ink: #16232E;
+    --muted: #5E6E7A;
+    --line: #CDD8E1;
+    --accent: #C0640F;      /* drafting amber - olculer */
+    --accent-2: #1C5B8A;    /* blueprint mavisi - yapisal */
+    --warn-bg: #FCF3E0;
+    --warn-ink: #8A5A00;
+    --warn-line: #E6C77A;
+    --grid: rgba(28, 91, 138, 0.10);
+    --shadow: 0 1px 2px rgba(16,35,46,.06), 0 8px 24px rgba(16,35,46,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0B1A2C;
+      --surface: #10263C;
+      --surface-2: #0E2136;
+      --ink: #E9EFF5;
+      --muted: #90A4B6;
+      --line: #22415F;
+      --accent: #EE9B3E;
+      --accent-2: #57A8DD;
+      --warn-bg: #2A2410;
+      --warn-ink: #E8C778;
+      --warn-line: #5C4E22;
+      --grid: rgba(87, 168, 221, 0.10);
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #E9EDF2; --surface: #FFFFFF; --surface-2: #F3F6F9; --ink: #16232E;
+    --muted: #5E6E7A; --line: #CDD8E1; --accent: #C0640F; --accent-2: #1C5B8A;
+    --warn-bg: #FCF3E0; --warn-ink: #8A5A00; --warn-line: #E6C77A; --grid: rgba(28,91,138,.10);
+    --shadow: 0 1px 2px rgba(16,35,46,.06), 0 8px 24px rgba(16,35,46,.06);
+  }
+  :root[data-theme="dark"] {
+    --ground: #0B1A2C; --surface: #10263C; --surface-2: #0E2136; --ink: #E9EFF5;
+    --muted: #90A4B6; --line: #22415F; --accent: #EE9B3E; --accent-2: #57A8DD;
+    --warn-bg: #2A2410; --warn-ink: #E8C778; --warn-line: #5C4E22; --grid: rgba(87,168,221,.10);
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 28px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+  }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 22px 18px 64px; }
+
+  /* Header with faint blueprint grid */
+  .head {
+    position: relative;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 22px 22px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 22px 22px,
+      var(--surface);
+    padding: 24px 22px;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .eyebrow {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 11px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--accent-2); margin: 0 0 8px;
+  }
+  h1 { margin: 0; font-size: clamp(30px, 8vw, 44px); letter-spacing: -.02em; text-wrap: balance; }
+  .lede { margin: 8px 0 0; color: var(--muted); max-width: 52ch; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: var(--shadow);
+    margin-top: 18px;
+  }
+
+  /* Drop / pick zone */
+  .drop {
+    border: 1.5px dashed var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    padding: 26px 18px;
+    text-align: center;
+    transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 8%, var(--surface-2)); }
+  .drop .ico { font-size: 30px; }
+  .drop p { margin: 8px 0 14px; color: var(--muted); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: 48px; padding: 0 22px;
+    border-radius: 10px; border: none; cursor: pointer;
+    font-size: 16px; font-weight: 600; font-family: inherit;
+    background: var(--accent-2); color: #fff;
+    -webkit-appearance: none;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn.amber { background: var(--accent); }
+  .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-2) 55%, transparent); outline-offset: 2px; }
+  .fileline { margin-top: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted); word-break: break-all; }
+
+  /* Concrete thickness control */
+  .ctrl { margin-top: 18px; padding: 16px 18px; }
+  .ctrl label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 8px; }
+  .ctrl-row { display: flex; align-items: stretch; gap: 8px; max-width: 240px; }
+  .ctrl-row input { flex: 1; min-height: 48px; font-size: 16px; padding: 0 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--ink); font-family: ui-monospace, Menlo, monospace; }
+  .ctrl-row input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; border-color: var(--accent); }
+  .unitbox { display: flex; align-items: center; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
+  .hint { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+
+  /* Summary tiles */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; margin-top: 18px; }
+  .tile { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .tile .k { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .tile .val { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; font-size: clamp(20px, 6vw, 28px); font-weight: 600; margin-top: 4px; }
+  .tile .val .u { font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 3px; }
+  .tile.len .val { color: var(--accent-2); }
+  .tile.area .val { color: var(--accent); }
+  .tile.vol .val { color: var(--ink); }
+
+  .meta { margin-top: 14px; font-size: 13px; color: var(--muted); display: flex; flex-wrap: wrap; gap: 6px 14px; }
+  .chip { display:inline-flex; align-items:center; gap:6px; background: var(--surface-2); border:1px solid var(--line); border-radius: 999px; padding: 3px 11px; font-family: ui-monospace, Menlo, monospace; font-size: 12px; }
+
+  .warn { margin-top: 16px; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn-ink); border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  .warn ul { margin: 6px 0 0; padding-left: 20px; }
+
+  .table-wrap { margin-top: 18px; overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; min-width: 520px; }
+  thead th { background: var(--accent-2); color: #fff; font-size: 12px; letter-spacing: .04em; text-transform: uppercase; text-align: left; padding: 11px 12px; white-space: nowrap; }
+  tbody td { padding: 10px 12px; border-top: 1px solid var(--line); font-size: 14px; }
+  tbody tr:nth-child(even) td { background: var(--surface-2); }
+  td.num { text-align: right; font-family: ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+  .cat { display:inline-block; font-size: 11px; font-weight:600; padding: 2px 8px; border-radius: 999px; }
+  .cat.Uzunluk { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+  .cat.Alan { background: color-mix(in srgb, var(--accent-2) 16%, transparent); color: var(--accent-2); }
+  .cat.Adet { background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+  .cat.Hacim { background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--ink); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+  .dlnote { margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .dlnote a { color: var(--accent-2); font-weight: 600; }
+  .hidden { display: none !important; }
+  .foot { margin-top: 26px; color: var(--muted); font-size: 12.5px; line-height: 1.6; }
+  .foot strong { color: var(--ink); }
+  .err { margin-top: 16px; background: color-mix(in srgb, #c0392b 12%, var(--surface)); border: 1px solid color-mix(in srgb, #c0392b 40%, var(--line)); color: #c0392b; border-radius: 10px; padding: 12px 14px; font-size: 14px; }
+  @media (max-width: 460px) { .tiles { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <p class="eyebrow">İnşaat Metraj Aracı · DXF</p>
+    <h1>Metraj</h1>
+    <p class="lede">Çizimi yükleyin; uzunluk (m), alan (m²), <strong>beton hacmi (m³)</strong> ve
+    adet metrajı çıksın, Excel olarak indirin. <strong>DXF</strong> cihazınızda kesin hesaplanır;
+    <strong>PDF / fotoğraf</strong> ise yapay zeka (Claude Vision) ile okunur.</p>
+  </header>
+
+  <section class="card">
+    <div id="drop" class="drop">
+      <div class="ico">📐</div>
+      <p>Çizim dosyasını buraya sürükleyin veya seçin<br /><small>DXF (cihazda, kesin) · PDF / JPG / PNG (yapay zeka ile)</small></p>
+      <button id="pick" class="btn" type="button">Dosya Seç</button>
+      <input id="file" type="file" accept=".dxf,application/dxf,text/plain,.pdf,application/pdf,image/*" class="hidden" />
+      <div id="fileline" class="fileline"></div>
+    </div>
+    <div id="err" class="err hidden"></div>
+  </section>
+
+  <section id="result" class="hidden">
+    <div class="card ctrl">
+      <label for="thk">Beton kalınlığı / döşeme yüksekliği</label>
+      <div class="ctrl-row">
+        <input id="thk" type="number" inputmode="decimal" min="0" step="1" placeholder="ör. 15" />
+        <span class=" unitbox">cm</span>
+      </div>
+      <p class="hint">Kapalı alanlardan (döşeme, temel, perde) <strong>m³ beton</strong> hesaplar. Çizimde 3B kalınlık (kod 39) varsa otomatik o kullanılır.</p>
+    </div>
+
+    <div class="tiles">
+      <div class="tile len"><div class="k">Toplam Uzunluk</div><div class="val" id="t-len">–<span class="u">m</span></div></div>
+      <div class="tile area"><div class="k">Toplam Alan</div><div class="val" id="t-area">–<span class="u">m²</span></div></div>
+      <div class="tile vol"><div class="k">Beton / Hacim</div><div class="val" id="t-vol">–<span class="u">m³</span></div></div>
+      <div class="tile"><div class="k">Toplam Adet</div><div class="val" id="t-count">–</div></div>
+    </div>
+
+    <div class="meta">
+      <span class="chip" id="m-unit">birim: –</span>
+      <span class="chip" id="m-ent">varlık: –</span>
+      <span class="chip" id="m-rows">kalem: –</span>
+    </div>
+
+    <div id="warn" class="warn hidden"></div>
+
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>No</th><th>Poz / Eleman</th><th>Kategori</th><th>Katman</th><th>Miktar</th><th>Birim</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+
+    <div class="actions">
+      <button id="dl-xlsx" class="btn amber" type="button">⬇︎ Excel indir (.xlsx)</button>
+      <button id="dl-csv" class="btn ghost" type="button">CSV indir</button>
+    </div>
+    <div id="dlnote" class="dlnote hidden"></div>
+  </section>
+
+  <p class="foot">
+    <strong>Nasıl çalışır?</strong> Dosya sunucuya gönderilmez; DXF tamamen cihazınızda (tarayıcıda) çözümlenir —
+    internet olmadan da çalışır. Uzunluk/alan/adet, çizimin gerçek koordinatlarından <strong>matematiksel olarak kesin</strong> hesaplanır.<br />
+    <strong>PDF / fotoğraf:</strong> Dosya bu sunucuya gönderilir ve Claude Vision ile okunur (yaklaşık/tahmini sonuç). Bunun için sunucuda geçerli bir <strong>ANTHROPIC_API_KEY</strong> tanımlı olmalıdır. En kesin sonuç için mümkünse DXF kullanın.
+  </p>
+</div>
+
+<script type="module">
+/* ---- DXF ayrıştırıcı + metraj + XLSX (kütüphanesiz, cihaz-içi) ---- */
+function parseDxf(text){
+  const lines=text.split(/\r\n|\r|\n/); const pairs=[];
+  for(let i=0;i+1<lines.length;i+=2){const code=parseInt(lines[i].trim(),10);const value=lines[i+1];if(!Number.isNaN(code))pairs.push([code,value!==undefined?value.trim():'']);}
+  let insUnits=0; const entities=[]; let section=null; let cur=null; let headerVar=null;
+  const push=()=>{if(cur){entities.push(cur);cur=null;}};
+  for(let i=0;i<pairs.length;i+=1){const [code,value]=pairs[i];
+    if(code===0){
+      if(value==='SECTION'){section=null;continue;}
+      if(value==='ENDSEC'){push();section=null;continue;}
+      if(section==='ENTITIES'){push();cur={type:value,layer:'0',v:[],};}
+      else{push();}
+      continue;
+    }
+    if(code===2&&section===null){section=value;continue;}
+    if(section==='HEADER'){
+      if(code===9){headerVar=value;continue;}
+      if(headerVar==='$INSUNITS'&&code===70){insUnits=parseInt(value,10)||0;headerVar=null;continue;}
+      continue;
+    }
+    if(section==='ENTITIES'&&cur){const num=parseFloat(value);
+      switch(code){
+        case 8:cur.layer=value;break;
+        case 2:cur.block=value;break;
+        case 70:cur.flag=parseInt(value,10)||0;break;
+        case 39:cur.thick=num;break;
+        case 40:cur.radius=num;break;
+        case 50:cur.startAngle=num;break;
+        case 51:cur.endAngle=num;break;
+        case 10:cur.v.push({x:num,y:NaN});break;
+        case 20:if(cur.v.length)cur.v[cur.v.length-1].y=num;break;
+        case 11:cur.p2={x:num,y:NaN};break;
+        case 21:if(cur.p2)cur.p2.y=num;break;
+        default:break;
+      }
+    }
+  }
+  push();
+  return {insUnits,entities};
+}
+const U2M={0:1,1:0.0254,2:0.3048,3:1609.344,4:0.001,5:0.01,6:1,7:1000,10:0.9144,14:0.1};
+const UNAME={0:'birimsiz',1:'inch',2:'ft',3:'mil',4:'mm',5:'cm',6:'m',7:'km',10:'yard',14:'dm'};
+const dist=(a,b)=>Math.hypot((b.x||0)-(a.x||0),(b.y||0)-(a.y||0));
+function polyLen(v,closed){let L=0;for(let i=1;i<v.length;i+=1)L+=dist(v[i-1],v[i]);if(closed&&v.length>2)L+=dist(v[v.length-1],v[0]);return L;}
+function polyArea(v){let a=0;for(let i=0;i<v.length;i+=1){const p=v[i],q=v[(i+1)%v.length];a+=(p.x||0)*(q.y||0)-(q.x||0)*(p.y||0);}return Math.abs(a)/2;}
+function arcLen(r,s,e){let sw=((e??0)-(s??0))*Math.PI/180;if(sw<0)sw+=2*Math.PI;return r*sw;}
+function computeMetraj(parsed,opts){
+  opts=opts||{}; const tM=Number(opts.thicknessM)||0; // global beton kalinligi (m)
+  const f=U2M[parsed.insUnits]??1; const unit=UNAME[parsed.insUnits]??'birimsiz';
+  const buckets=new Map(); const blocks=new Map();
+  const addL=(layer,m)=>{const k=layer+'||L';const b=buckets.get(k)||{layer,metric:'L',value:0,count:0};b.value+=m;b.count+=1;buckets.set(k,b);};
+  const addA=(layer,m2,v39)=>{const k=layer+'||A';const b=buckets.get(k)||{layer,metric:'A',value:0,vol:0,count:0};b.value+=m2;b.vol+=v39||0;b.count+=1;buckets.set(k,b);};
+  for(const e of parsed.entities){const layer=e.layer||'0';const verts=e.v.filter((p)=>!Number.isNaN(p.x)&&!Number.isNaN(p.y));
+    switch(e.type){
+      case 'LINE': if(verts.length&&e.p2)addL(layer,dist(verts[0],e.p2)*f); else if(verts.length>=2)addL(layer,dist(verts[0],verts[1])*f); break;
+      case 'LWPOLYLINE': case 'POLYLINE':{const closed=Boolean((e.flag||0)&1);addL(layer,polyLen(verts,closed)*f);if(closed&&verts.length>=3){const area=polyArea(verts)*f*f;addA(layer,area,e.thick?area*Math.abs(e.thick)*f:0);}break;}
+      case 'CIRCLE': if(e.radius){const area=Math.PI*e.radius*e.radius*f*f;addL(layer,2*Math.PI*e.radius*f);addA(layer,area,e.thick?area*Math.abs(e.thick)*f:0);} break;
+      case 'ARC': if(e.radius)addL(layer,arcLen(e.radius,e.startAngle,e.endAngle)*f); break;
+      case 'INSERT':{const n=e.block||'blok';blocks.set(n,(blocks.get(n)||0)+1);break;}
+      default:break;
+    }
+  }
+  const round=(n)=>Math.round(n*1000)/1000; const items=[];
+  for(const b of buckets.values()){
+    if(b.metric==='L'){items.push({name:`${b.layer} - Uzunluk`,category:'Uzunluk',layer:b.layer,quantity:round(b.value),unit:'m',entities:b.count});}
+    else{
+      items.push({name:`${b.layer} - Alan`,category:'Alan',layer:b.layer,quantity:round(b.value),unit:'m2',entities:b.count});
+      const vol=b.vol>0?b.vol:(tM>0?b.value*tM:0);
+      if(vol>0)items.push({name:`${b.layer} - Hacim (beton)`,category:'Hacim',layer:b.layer,quantity:round(vol),unit:'m3',entities:b.count});
+    }
+  }
+  for(const [n,c] of blocks.entries())items.push({name:n,category:'Adet',layer:n,quantity:c,unit:'adet',entities:c});
+  items.sort((a,b)=>a.category.localeCompare(b.category)||a.name.localeCompare(b.name));
+  const sum=(u)=>items.filter((i)=>i.unit===u).reduce((s,i)=>s+i.quantity,0);
+  const warnings=[];
+  if(parsed.insUnits===0)warnings.push('Çizimde birim ($INSUNITS) tanımlı değil; değerler çizim biriminde alındı (metre varsayıldı). Ölçeği kontrol edin.');
+  if(items.length===0)warnings.push('Çizimde metraj çıkarılacak geometri (çizgi/poligon/blok) bulunamadı.');
+  if(tM>0 && !items.some((i)=>i.unit==='m3'))warnings.push('Beton kalınlığı girildi ama çizimde kapalı alan (poligon/daire) bulunmadığı için m³ hesaplanamadı.');
+  return {unit,items,totals:{length_m:round(sum('m')),area_m2:round(sum('m2')),volume_m3:round(sum('m3')),count:sum('adet')},warnings,entityCount:parsed.entities.length};
+}
+/* XLSX */
+function crc32(bytes){let c;const t=crc32.t||(crc32.t=(()=>{const a=new Uint32Array(256);for(let n=0;n<256;n+=1){c=n;for(let k=0;k<8;k+=1)c=(c&1)?(0xEDB88320^(c>>>1)):(c>>>1);a[n]=c>>>0;}return a;})());let crc=0xFFFFFFFF;for(let i=0;i<bytes.length;i+=1)crc=t[(crc^bytes[i])&0xFF]^(crc>>>8);return (crc^0xFFFFFFFF)>>>0;}
+const enc=(s)=>new TextEncoder().encode(s);
+const esc=(s)=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+function colLetter(i){let s='';i+=1;while(i>0){const m=(i-1)%26;s=String.fromCharCode(65+m)+s;i=Math.floor((i-1)/26);}return s;}
+function sheetXml(rows){let x='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';rows.forEach((cells,r)=>{x+=`<row r="${r+1}">`;cells.forEach((cell,c)=>{if(cell===null||cell===undefined||cell==='')return;const ref=colLetter(c)+(r+1);if(typeof cell==='number'&&Number.isFinite(cell))x+=`<c r="${ref}"><v>${cell}</v></c>`;else x+=`<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(cell)}</t></is></c>`;});x+='</row>';});return x+'</sheetData></worksheet>';}
+function zipStore(files){const chunks=[];const central=[];let offset=0;const u16=(n)=>[n&0xFF,(n>>>8)&0xFF];const u32=(n)=>[n&0xFF,(n>>>8)&0xFF,(n>>>16)&0xFF,(n>>>24)&0xFF];
+  for(const f of files){const nb=enc(f.name);const crc=crc32(f.data);const sz=f.data.length;const local=[].concat(u32(0x04034b50),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0));chunks.push(new Uint8Array(local),nb,f.data);const ll=local.length+nb.length+sz;central.push([].concat(u32(0x02014b50),u16(20),u16(20),u16(0),u16(0),u16(0),u16(0),u32(crc),u32(sz),u32(sz),u16(nb.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset)),Array.from(nb));offset+=ll;}
+  const cs=offset;let ca=[];for(const c of central)ca=ca.concat(c);const cb=new Uint8Array(ca);const eocd=new Uint8Array([].concat(u32(0x06054b50),u16(0),u16(0),u16(files.length),u16(files.length),u32(cb.length),u32(cs),u16(0)));chunks.push(cb,eocd);let tot=0;for(const ch of chunks)tot+=ch.length;const out=new Uint8Array(tot);let p=0;for(const ch of chunks){out.set(ch,p);p+=ch.length;}return out;}
+function buildXlsx(m,meta){const rows=[];rows.push(['METRAJ CETVELI (Quantity Takeoff)']);rows.push(['Metraj',meta.name||'','','Birim',m.unit]);rows.push(['Dosya',meta.fileName||'','','Motor','DXF geometri (kesin)']);rows.push([]);rows.push(['No','Poz / Eleman','Kategori','Katman','Miktar','Birim']);
+  m.items.forEach((it,i)=>rows.push([i+1,it.name,it.category,it.layer,it.quantity,it.unit]));
+  rows.push([]);rows.push(['TOPLAM Uzunluk (m)',m.totals.length_m]);rows.push(['TOPLAM Alan (m2)',m.totals.area_m2]);rows.push(['TOPLAM Hacim / Beton (m3)',m.totals.volume_m3]);rows.push(['TOPLAM Adet',m.totals.count]);
+  if(m.warnings.length){rows.push([]);rows.push(['Uyarilar']);m.warnings.forEach((w)=>rows.push([w]));}
+  const ct='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>';
+  const rels='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const wb='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Metraj" sheetId="1" r:id="rId1"/></sheets></workbook>';
+  const wbr='<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>';
+  return zipStore([{name:'[Content_Types].xml',data:enc(ct)},{name:'_rels/.rels',data:enc(rels)},{name:'xl/workbook.xml',data:enc(wb)},{name:'xl/_rels/workbook.xml.rels',data:enc(wbr)},{name:'xl/worksheets/sheet1.xml',data:enc(sheetXml(rows))}]);}
+
+/* ---- UI ---- */
+const $=(id)=>document.getElementById(id);
+let current=null; let currentName='metraj'; let lastParsed=null;
+const fmt=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:3});
+const uLabel=(u)=>u==='m2'?'m²':(u==='m3'?'m³':u);
+const thicknessM=()=>{const v=parseFloat($('thk').value);return Number.isFinite(v)&&v>0?v/100:0;}; // cm -> m
+
+function showError(msg){const e=$('err');e.textContent=msg;e.classList.remove('hidden');}
+function clearError(){$('err').classList.add('hidden');}
+
+function render(m){
+  $('t-len').innerHTML=`${fmt(m.totals.length_m)}<span class="u">m</span>`;
+  $('t-area').innerHTML=`${fmt(m.totals.area_m2)}<span class="u">m²</span>`;
+  $('t-vol').innerHTML=`${fmt(m.totals.volume_m3)}<span class="u">m³</span>`;
+  $('t-count').textContent=fmt(m.totals.count);
+  $('m-unit').textContent='birim: '+m.unit;
+  $('m-ent').textContent='varlık: '+m.entityCount;
+  $('m-rows').textContent='kalem: '+m.items.length;
+  const w=$('warn');
+  if(m.warnings.length){w.innerHTML='<strong>⚠︎ Uyarılar</strong><ul>'+m.warnings.map((x)=>`<li>${esc(x)}</li>`).join('')+'</ul>';w.classList.remove('hidden');}
+  else w.classList.add('hidden');
+  const tb=$('rows');tb.innerHTML='';
+  if(!m.items.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:18px">Metraj kalemi bulunamadı.</td></tr>';}
+  m.items.forEach((it,i)=>{const tr=document.createElement('tr');tr.innerHTML=`<td class="num">${i+1}</td><td>${esc(it.name)}</td><td><span class="cat ${it.category}">${it.category}</span></td><td>${esc(it.layer)}</td><td class="num">${fmt(it.quantity)}</td><td>${uLabel(it.unit)}</td>`;tb.appendChild(tr);});
+  $('result').classList.remove('hidden');
+  $('result').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function handleText(text,name){
+  try{
+    clearError();
+    currentName=(name||'metraj').replace(/\.dxf$/i,'');
+    lastParsed=parseDxf(text);
+    current=computeMetraj(lastParsed,{thicknessM:thicknessM()});
+    render(current);
+  }catch(err){showError('Çizim çözümlenemedi: '+(err&&err.message?err.message:err));}
+}
+function recompute(){
+  if(!lastParsed)return;
+  current=computeMetraj(lastParsed,{thicknessM:thicknessM()});
+  render(current);
+}
+
+function readFile(file){
+  if(!file)return;
+  $('fileline').textContent='📎 '+file.name;
+  const name=(file.name||'').toLowerCase();
+  if(name.endsWith('.dxf')){
+    const r=new FileReader();
+    r.onload=()=>handleText(String(r.result),file.name);
+    r.onerror=()=>showError('Dosya okunamadı.');
+    r.readAsText(file);
+  }else{
+    uploadToServer(file); // PDF / görüntü -> sunucuda yapay zeka ile
+  }
+}
+function setBusy(b){const btn=$('pick');btn.disabled=b;btn.textContent=b?'Analiz ediliyor…':'Dosya Seç';}
+function adaptVision(resp){
+  const items=(resp.items||[]).map((it)=>{
+    let u=(it.unit||'').toString().trim().toLowerCase();
+    if(u==='m²'||u==='m2')u='m2'; else if(u==='m³'||u==='m3')u='m3'; else if(u.startsWith('ad'))u='adet'; else if(u==='m'||u==='mt'||u==='metre')u='m';
+    return {name:it.name||'Eleman',category:it.category||'Diğer',layer:it.layer||it.note||'',quantity:Number(it.quantity)||0,unit:u||'adet'};
+  });
+  const sum=(u)=>items.filter((i)=>i.unit===u).reduce((s,i)=>s+i.quantity,0);
+  const r=(n)=>Math.round(n*1000)/1000;
+  const warnings=(resp.summary&&resp.summary.warnings)?resp.summary.warnings.slice():[];
+  if(resp.summary&&resp.summary.notes)warnings.push('AI notu: '+resp.summary.notes);
+  warnings.unshift('Bu sonuçlar PDF/görüntüden yapay zeka ile TAHMİNİ çıkarıldı; kesin metraj için DXF kullanın ve değerleri kontrol edin.');
+  return {unit:(resp.scale||'AI-tahmini'),items,totals:{length_m:r(sum('m')),area_m2:r(sum('m2')),volume_m3:r(sum('m3')),count:sum('adet')},warnings,entityCount:'AI'};
+}
+async function uploadToServer(file){
+  clearError();
+  currentName=(file.name||'metraj').replace(/\.[^.]+$/,'');
+  lastParsed=null;
+  $('fileline').textContent='🧠 Yapay zeka ile analiz ediliyor… (birkaç saniye sürebilir)';
+  setBusy(true);
+  try{
+    const base=window.METRAJ_API||''; // boş = aynı sunucu (backend bu sayfayı sunuyorsa)
+    const form=new FormData(); form.append('file',file);
+    const res=await fetch(base+'/api/metraj/analyze',{method:'POST',body:form});
+    const data=await res.json().catch(()=>({message:'Sunucudan geçersiz yanıt.'}));
+    if(!res.ok) throw new Error(data.message||('Sunucu hatası ('+res.status+')'));
+    current=adaptVision(data);
+    render(current);
+    $('fileline').textContent='📎 '+file.name;
+  }catch(err){
+    showError('PDF/görüntü analizi başarısız: '+(err&&err.message?err.message:err)+' — Sunucu çalışıyor ve ANTHROPIC_API_KEY tanımlı mı?');
+    $('fileline').textContent='📎 '+file.name;
+  }finally{ setBusy(false); }
+}
+
+async function saveFile(bytes,filename,mime){
+  const blob=new Blob([bytes],{type:mime});
+  // 1) iPad/telefon: Paylas sayfasi (Dosyalara Kaydet) - iframe icinde en guvenilir yol
+  try{
+    if(navigator.canShare){
+      const file=new File([blob],filename,{type:mime});
+      if(navigator.canShare({files:[file]})){ await navigator.share({files:[file],title:filename}); return; }
+    }
+  }catch(e){ if(e&&e.name==='AbortError')return; }
+  // 2) PC: klasik otomatik indirme
+  const url=URL.createObjectURL(blob);
+  try{
+    const a=document.createElement('a');a.href=url;a.download=filename;a.rel='noopener';
+    document.body.appendChild(a);a.click();a.remove();
+  }catch(e){}
+  // 3) Garanti yedek: tiklanabilir indirme baglantisi (otomatik indirme engellenirse)
+  const note=$('dlnote');
+  note.innerHTML=`İndirme başlamadıysa buraya dokunun: <a id="dllink" download="${filename}">${filename}</a>`;
+  const link=$('dllink'); link.href=url;
+  note.classList.remove('hidden');
+  setTimeout(()=>URL.revokeObjectURL(url),120000);
+}
+
+$('pick').addEventListener('click',()=>$('file').click());
+$('file').addEventListener('change',(e)=>readFile(e.target.files[0]));
+const drop=$('drop');
+['dragenter','dragover'].forEach((ev)=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.add('over');}));
+['dragleave','drop'].forEach((ev)=>drop.addEventListener(ev,(e)=>{e.preventDefault();drop.classList.remove('over');}));
+drop.addEventListener('drop',(e)=>{const f=e.dataTransfer.files&&e.dataTransfer.files[0];if(f)readFile(f);});
+
+$('thk').addEventListener('input',recompute);
+$('dl-xlsx').addEventListener('click',()=>{if(!current)return;const bytes=buildXlsx(current,{name:currentName,fileName:currentName+'.dxf'});saveFile(bytes,currentName+'.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');});
+$('dl-csv').addEventListener('click',()=>{if(!current)return;const head=['No','Poz / Eleman','Kategori','Katman','Miktar','Birim'];const lines=[head.join(';')];current.items.forEach((it,i)=>lines.push([i+1,'"'+it.name.replace(/"/g,'""')+'"',it.category,'"'+it.layer.replace(/"/g,'""')+'"',String(it.quantity).replace('.',','),uLabel(it.unit)].join(';')));const csv='﻿'+lines.join('\r\n');saveFile(new TextEncoder().encode(csv),currentName+'.csv','text/csv;charset=utf-8');});
+</script>
+</body>
+</html>

@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import http from 'http';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { Server } from 'socket.io';
 import db from './config/database.js';
 import routes from './routes/index.js';
@@ -45,6 +47,10 @@ io.on('connection', (socket) => {
 
 // Routes
 app.use('/api', routes);
+
+// Statik metraj arayuzu (public/index.html) - iPad/PC'den tek adresle erisim
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Error Handler
 app.use(errorHandler);
