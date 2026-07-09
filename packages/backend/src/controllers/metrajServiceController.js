@@ -39,11 +39,11 @@ export const analyzePublic = async (req, res) => {
  */
 export const concreteExcel = async (req, res) => {
   try {
-    const { project, rows, notes } = req.body || {};
+    const { project, rows, notes, unit } = req.body || {};
     if (!Array.isArray(rows) || rows.length === 0) {
       return res.status(400).json({ message: 'En az bir beton kalemi (rows) gerekli.' });
     }
-    const buffer = await buildConcreteExcel({ project, rows, notes });
+    const buffer = await buildConcreteExcel({ project, rows, notes, unit: unit || 'CY' });
     const safe = (project || 'beton-cetveli').replace(/[^a-z0-9_\-]+/gi, '_').slice(0, 60);
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.setHeader('Content-Disposition', `attachment; filename="${safe}.xlsx"`);

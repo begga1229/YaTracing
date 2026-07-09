@@ -223,7 +223,7 @@
 
     <div class="actions">
       <button id="dl-xlsx" class="btn amber" type="button">⬇︎ Excel indir (.xlsx)</button>
-      <button id="dl-beton" class="btn" type="button">🧱 Beton Cetveli (Excel)</button>
+      <button id="dl-beton" class="btn" type="button">🧱 Beton Cetveli (CY, Excel)</button>
       <button id="dl-csv" class="btn ghost" type="button">CSV indir</button>
     </div>
     <div id="dlnote" class="dlnote hidden"></div>
@@ -499,7 +499,7 @@ $('dl-beton').addEventListener('click',async ()=>{
   if(!rows.length){ showError('Beton kalemi bulunamadı. Beton cetveli için m³ beton kalemi gerekir — DXF\'te beton kalınlığı girin ya da PDF/fotoğrafı AI ile analiz edin.'); return; }
   try{
     const base=window.METRAJ_API||'';
-    const res=await fetch(base+'/api/metraj/concrete-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:currentName,rows})});
+    const res=await fetch(base+'/api/metraj/concrete-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:currentName,rows,unit:'CY'})});
     if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||('Sunucu hatası '+res.status));}
     const buf=new Uint8Array(await res.arrayBuffer());
     saveFile(buf,(currentName||'beton-cetveli')+'-BETON.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

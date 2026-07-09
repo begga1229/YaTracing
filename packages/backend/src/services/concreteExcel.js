@@ -7,16 +7,21 @@ import ExcelJS from 'exceljs';
  *
  * @param {Object} data
  * @param {string} data.project    - proje basligi (or. "SKL-15x9 depo")
- * @param {Array}  data.rows       - [{ name, cls, formula, volume }]
+ * @param {Array}  data.rows       - [{ name, cls, formula, volume }]  (volume: m3 tabaninda)
+ * @param {string} [data.unit]     - cikti birimi: 'CY' (yd3, varsayilan) veya 'm3'
  * @param {string[]} [data.notes]  - dipnotlar
  * @returns {Promise<Buffer>}
  */
 export const buildConcreteExcel = async (data) => {
+  // Hesap tabani m3; cikti CY (cubic yard / yd3) veya m3 olabilir.
+  const unit = (data.unit || 'CY').toUpperCase() === 'M3' ? 'm3' : 'CY';
+  const F = unit === 'CY' ? 1.307950619 : 1;         // 1 m3 = 1.307950619 CY
+  const uLabel = unit === 'CY' ? 'CY (yd³)' : 'м³';
   const rows = (data.rows || []).map((r) => ({
     name: r.name || '',
     cls: r.cls || '',
     formula: r.formula || '',
-    volume: Number(r.volume) || 0,
+    volume: (Number(r.volume) || 0) * F,             // CY'ye cevrilmis
   }));
 
   const wb = new ExcelJS.Workbook();
@@ -48,7 +53,7 @@ export const buildConcreteExcel = async (data) => {
   ws.getCell('A3').alignment = { horizontal: 'center' };
 
   // Tablo basligi (satir 5)
-  const head = ['№', 'Наименование работ', 'Класс бетона', 'Формула подсчёта', 'Объём, м³'];
+  const head = ['№', 'Наименование работ', 'Класс бетона', 'Формула подсчёта', `Объём, ${uLabel}`];
   const hr = ws.getRow(5);
   head.forEach((h, i) => {
     const c = hr.getCell(i + 1);
@@ -104,7 +109,7 @@ export const buildConcreteExcel = async (data) => {
     ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECEFF3' } };
     r += 1;
     const shr = ws.getRow(r);
-    ['Класс', 'Объём, м³'].forEach((h, i) => {
+    ['Класс', `Объём, ${uLabel}`].forEach((h, i) => {
       const cell = shr.getCell(i === 0 ? 1 : 5);
       cell.value = h; cell.font = { bold: true }; cell.border = border;
     });
@@ -136,6 +141,7 @@ export const buildConcreteExcel = async (data) => {
   const notes = data.notes && data.notes.length ? data.notes : [
     'Объёмы даны как «бетон в деле» (чистый геометрический объём), без коэффициентов на потери/добор.',
     'Значения рассчитаны по размерам, снятым с чертежа; проверьте размеры перед применением.',
+    ...(unit === 'CY' ? ['Объёмы приведены в кубических ярдах (CY): 1 м³ = 1.30795 CY. Формулы даны в метрах (м³).'] : []),
   ];
   ws.mergeCells(`A${r}:E${r}`);
   ws.getCell(`A${r}`).value = 'ПРИМЕЧАНИЯ И ДОПУЩЕНИЯ';
