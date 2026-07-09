@@ -21,6 +21,39 @@ export const buildConcreteExcel = async (data) => {
   const toOut = (m3) => (unit === 'CY' ? m3 * K : m3);
   const conv = (v) => toOut(toM3(Number(v) || 0));
   const uLabel = unit === 'CY' ? 'CY (yd³)' : 'м³';
+
+  // Dil: CY (US) -> Ingilizce, m3 (metrik) -> Rusca sablon dili (istenirse data.lang ile ezilir)
+  const lang = data.lang || (unit === 'CY' ? 'en' : 'ru');
+  const L = lang === 'en' ? {
+    sheet: 'Concrete', projectDefault: 'Concrete — Quantity Takeoff',
+    title: 'CONCRETE QUANTITY TAKEOFF (Bill of Concrete Volumes)',
+    subtitle: 'Checked by: YaTracing (Claude)   •   Stage: Design   •   Concrete-in-place (net geometric volume)',
+    head: ['No.', 'Description of work', 'Concrete class', 'Calculation formula', `Volume, ${uLabel}`],
+    totalRow: 'TOTAL concrete (all classes)',
+    summary: 'SUMMARY BY CONCRETE CLASS',
+    classCol: 'Class', volCol: `Volume, ${uLabel}`, total: 'TOTAL',
+    noClass: '(no class)', notesTitle: 'NOTES & ASSUMPTIONS',
+    notes: [
+      'Volumes are concrete-in-place (net geometric volume), without waste/allowance factors.',
+      'Quantities computed from dimensions taken off the drawing; verify dimensions before use.',
+      'Volumes in CY (cubic yards): 1 CY = 27 ft³ = 0.7646 m³.',
+    ],
+  } : {
+    sheet: 'Бетон', projectDefault: 'Бетон — ведомость объёмов',
+    title: 'ВЕДОМОСТЬ ОБЪЁМОВ БЕТОННЫХ РАБОТ  (раздел КЖ)',
+    subtitle: 'Пров.: YaTracing (Claude)   •   Стадия: Р   •   Объём бетона «в деле» (чистый геометрический)',
+    head: ['№', 'Наименование работ', 'Класс бетона', 'Формула подсчёта', `Объём, ${uLabel}`],
+    totalRow: 'ИТОГО бетон (все классы)',
+    summary: 'СВОДКА ПО КЛАССАМ БЕТОНА',
+    classCol: 'Класс', volCol: `Объём, ${uLabel}`, total: 'ИТОГО',
+    noClass: '(без класса)', notesTitle: 'ПРИМЕЧАНИЯ И ДОПУЩЕНИЯ',
+    notes: [
+      'Объёмы даны как «бетон в деле» (чистый геометрический объём), без коэффициентов на потери/добор.',
+      'Значения рассчитаны по размерам, снятым с чертежа; проверьте размеры перед применением.',
+      ...(unit === 'CY' ? ['Объёмы в CY (куб. ярд): 1 CY = 27 ft³ = 0.7646 м³.'] : []),
+    ],
+  };
+
   const rows = (data.rows || []).map((r) => ({
     name: r.name || '',
     cls: r.cls || '',
@@ -31,7 +64,7 @@ export const buildConcreteExcel = async (data) => {
   const wb = new ExcelJS.Workbook();
   wb.creator = 'YaTracing';
   wb.created = new Date();
-  const ws = wb.addWorksheet('Бетон', { views: [{ state: 'frozen', ySplit: 6 }] });
+  const ws = wb.addWorksheet(L.sheet, { views: [{ state: 'frozen', ySplit: 6 }] });
 
   ws.columns = [
     { width: 6 }, { width: 48 }, { width: 12 }, { width: 40 }, { width: 12 },
@@ -42,22 +75,22 @@ export const buildConcreteExcel = async (data) => {
 
   // Baslik
   ws.mergeCells('A1:E1');
-  ws.getCell('A1').value = data.project || 'Бетон — ведомость объёмов';
+  ws.getCell('A1').value = data.project || L.projectDefault;
   ws.getCell('A1').font = { size: 14, bold: true };
   ws.getCell('A1').alignment = { horizontal: 'center' };
 
   ws.mergeCells('A2:E2');
-  ws.getCell('A2').value = 'ВЕДОМОСТЬ ОБЪЁМОВ БЕТОННЫХ РАБОТ  (раздел КЖ)';
+  ws.getCell('A2').value = L.title;
   ws.getCell('A2').font = { size: 12, bold: true };
   ws.getCell('A2').alignment = { horizontal: 'center' };
 
   ws.mergeCells('A3:E3');
-  ws.getCell('A3').value = 'Пров.: YaTracing (Claude)   •   Стадия: Р   •   Объём бетона «в деле» (чистый геометрический)';
+  ws.getCell('A3').value = L.subtitle;
   ws.getCell('A3').font = { size: 9, italic: true, color: { argb: 'FF666666' } };
   ws.getCell('A3').alignment = { horizontal: 'center' };
 
   // Tablo basligi (satir 5)
-  const head = ['№', 'Наименование работ', 'Класс бетона', 'Формула подсчёта', `Объём, ${uLabel}`];
+  const head = L.head;
   const hr = ws.getRow(5);
   head.forEach((h, i) => {
     const c = hr.getCell(i + 1);
@@ -91,7 +124,7 @@ export const buildConcreteExcel = async (data) => {
   // ИТОГО
   const tr = ws.getRow(r);
   ws.mergeCells(`A${r}:D${r}`);
-  tr.getCell(1).value = 'ИТОГО бетон (все классы)';
+  tr.getCell(1).value = L.totalRow;
   tr.getCell(1).font = { bold: true };
   tr.getCell(1).alignment = { horizontal: 'right' };
   tr.getCell(5).value = Math.round(total * 100000) / 100000;
@@ -103,17 +136,17 @@ export const buildConcreteExcel = async (data) => {
   // Sinif ozeti
   const byClass = new Map();
   rows.forEach((row) => {
-    const k = row.cls || '(sınıfsız)';
+    const k = row.cls || L.noClass;
     byClass.set(k, (byClass.get(k) || 0) + row.volume);
   });
   if (byClass.size) {
     ws.mergeCells(`A${r}:E${r}`);
-    ws.getCell(`A${r}`).value = 'СВОДКА ПО КЛАССАМ БЕТОНА';
+    ws.getCell(`A${r}`).value = L.summary;
     ws.getCell(`A${r}`).font = { bold: true };
     ws.getCell(`A${r}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECEFF3' } };
     r += 1;
     const shr = ws.getRow(r);
-    ['Класс', `Объём, ${uLabel}`].forEach((h, i) => {
+    [L.classCol, L.volCol].forEach((h, i) => {
       const cell = shr.getCell(i === 0 ? 1 : 5);
       cell.value = h; cell.font = { bold: true }; cell.border = border;
     });
@@ -131,7 +164,7 @@ export const buildConcreteExcel = async (data) => {
     }
     const itr = ws.getRow(r);
     ws.mergeCells(`A${r}:D${r}`);
-    itr.getCell(1).value = 'ИТОГО';
+    itr.getCell(1).value = L.total;
     itr.getCell(1).font = { bold: true };
     itr.getCell(1).alignment = { horizontal: 'right' };
     itr.getCell(5).value = Math.round(total * 100000) / 100000;
@@ -142,13 +175,9 @@ export const buildConcreteExcel = async (data) => {
   }
 
   // Notlar
-  const notes = data.notes && data.notes.length ? data.notes : [
-    'Объёмы даны как «бетон в деле» (чистый геометрический объём), без коэффициентов на потери/добор.',
-    'Значения рассчитаны по размерам, снятым с чертежа; проверьте размеры перед применением.',
-    ...(unit === 'CY' ? ['Объёмы в CY (куб. ярд): 1 CY = 27 ft³ = 0.7646 м³.'] : []),
-  ];
+  const notes = data.notes && data.notes.length ? data.notes : L.notes;
   ws.mergeCells(`A${r}:E${r}`);
-  ws.getCell(`A${r}`).value = 'ПРИМЕЧАНИЯ И ДОПУЩЕНИЯ';
+  ws.getCell(`A${r}`).value = L.notesTitle;
   ws.getCell(`A${r}`).font = { bold: true };
   r += 1;
   notes.forEach((n, i) => {
