@@ -119,6 +119,10 @@
   .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
   .btn:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent-2) 55%, transparent); outline-offset: 2px; }
   .fileline { margin-top: 12px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--muted); word-break: break-all; }
+  .unitsys { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .uslbl { font-size: 13px; font-weight: 600; color: var(--muted); }
+  .seg { min-height: 40px; padding: 0 14px; border: 1px solid var(--line); background: var(--surface-2); color: var(--ink); border-radius: 8px; cursor: pointer; font-size: 14px; font-family: inherit; }
+  .seg.active { background: var(--accent-2); color: #fff; border-color: var(--accent-2); font-weight: 600; }
 
   /* Concrete thickness control */
   .ctrl { margin-top: 18px; padding: 16px 18px; }
@@ -178,6 +182,11 @@
   </header>
 
   <section class="card">
+    <div class="unitsys">
+      <span class="uslbl">Birim sistemi:</span>
+      <button id="us-metric" class="seg active" type="button">Metrik (m³)</button>
+      <button id="us-us" class="seg" type="button">US (CY · ft)</button>
+    </div>
     <div id="drop" class="drop">
       <div class="ico">📐</div>
       <p>Çizim dosyasını buraya sürükleyin veya seçin<br /><small>DXF (cihazda, kesin) · PDF / JPG / PNG (yapay zeka ile)</small></p>
@@ -223,7 +232,7 @@
 
     <div class="actions">
       <button id="dl-xlsx" class="btn amber" type="button">⬇︎ Excel indir (.xlsx)</button>
-      <button id="dl-beton" class="btn" type="button">🧱 Beton Cetveli (CY, Excel)</button>
+      <button id="dl-beton" class="btn" type="button">🧱 Beton Cetveli (Excel)</button>
       <button id="dl-csv" class="btn ghost" type="button">CSV indir</button>
     </div>
     <div id="dlnote" class="dlnote hidden"></div>
@@ -355,7 +364,8 @@ function buildXlsx(m,meta){const rows=[];rows.push(['METRAJ CETVELI (Quantity Ta
 
 /* ---- UI ---- */
 const $=(id)=>document.getElementById(id);
-let current=null; let currentName='metraj'; let lastParsed=null;
+let current=null; let currentName='metraj'; let lastParsed=null; let unitSys='metric';
+function setUnitSys(s){unitSys=s;$('us-metric').classList.toggle('active',s==='metric');$('us-us').classList.toggle('active',s==='us');}
 const fmt=(n)=>Number(n).toLocaleString('tr-TR',{maximumFractionDigits:3});
 const uLabel=(u)=>u==='m2'?'m²':(u==='m3'?'m³':u);
 const thicknessM=()=>{const v=parseFloat($('thk').value);return Number.isFinite(v)&&v>0?v/100:0;}; // cm -> m
@@ -364,9 +374,10 @@ function showError(msg){const e=$('err');e.textContent=msg;e.classList.remove('h
 function clearError(){$('err').classList.add('hidden');}
 
 function render(m){
-  $('t-len').innerHTML=`${fmt(m.totals.length_m)}<span class="u">m</span>`;
-  $('t-area').innerHTML=`${fmt(m.totals.area_m2)}<span class="u">m²</span>`;
-  $('t-vol').innerHTML=`${fmt(m.totals.volume_m3)}<span class="u">m³</span>`;
+  const uL=m.uLabels||{len:'m',area:'m²',vol:'m³'};
+  $('t-len').innerHTML=`${fmt(m.totals.length_m)}<span class="u">${uL.len}</span>`;
+  $('t-area').innerHTML=`${fmt(m.totals.area_m2)}<span class="u">${uL.area}</span>`;
+  $('t-vol').innerHTML=`${fmt(m.totals.volume_m3)}<span class="u">${uL.vol}</span>`;
   $('t-count').textContent=fmt(m.totals.count);
   $('m-unit').textContent='birim: '+m.unit;
   $('m-ent').textContent='varlık: '+m.entityCount;
@@ -416,26 +427,51 @@ function readFile(file){
   }
 }
 function setBusy(b){const btn=$('pick');btn.disabled=b;btn.textContent=b?'Analiz ediliyor…':'Dosya Seç';}
+function normUnit(raw){
+  let u=(raw||'').toString().trim().toLowerCase();
+  if(['m3','m³','cbm'].includes(u))return 'm³';
+  if(['cy','yd3','yd³','cuyd','cu-yd','cu yd'].includes(u))return 'CY';
+  if(['m2','m²','sqm'].includes(u))return 'm²';
+  if(['sf','ft2','ft²','sqft','sq ft'].includes(u))return 'SF';
+  if(['m','mt','metre','meter'].includes(u))return 'm';
+  if(['lf','ft','feet','foot','lin ft'].includes(u))return 'LF';
+  if(u.startsWith('ad')||['ea','pcs','pc','nos','each'].includes(u))return 'EA';
+  if(['ton','tonne','t','tons'].includes(u))return 'ton';
+  return raw||'EA';
+}
+function isConcreteItem(i){
+  const t=((i.category||'')+' '+(i.name||''));
+  const isVol=(i.unit==='m3'||i.unit==='m³'||i.unit==='CY');
+  return isVol && /beton|hacim|concrete/i.test(t) && !/gazbeton|gaz\s?beton|kaz[iı]|hafriyat|donat|tu[gğ]la|s[ıi]va|excavation|rebar|masonry|cmu|formwork|form-?work/i.test(t);
+}
 function adaptVision(resp){
-  const items=(resp.items||[]).map((it)=>{
-    let u=(it.unit||'').toString().trim().toLowerCase();
-    if(u==='m²'||u==='m2')u='m2'; else if(u==='m³'||u==='m3')u='m3'; else if(u.startsWith('ad'))u='adet'; else if(u==='m'||u==='mt'||u==='metre')u='m';
-    return {name:it.name||'Eleman',category:it.category||'Diğer',layer:it.layer||it.note||'',formula:it.formula||it.note||it.layer||'',cls:it.concreteClass||it.concrete_class||'',quantity:Number(it.quantity)||0,unit:u||'adet'};
-  });
-  const sum=(u)=>items.filter((i)=>i.unit===u).reduce((s,i)=>s+i.quantity,0);
+  const items=(resp.items||[]).map((it)=>({
+    name:it.name||'Eleman',category:it.category||'Diğer',layer:it.layer||it.note||'',
+    formula:it.formula||it.note||it.layer||'',cls:it.concreteClass||it.concrete_class||'',
+    quantity:Number(it.quantity)||0,unit:normUnit(it.unit)
+  }));
   const r=(n)=>Math.round(n*1000)/1000;
-  // "Beton" toplami YALNIZCA yapisal beton olsun: kazi/gazbeton/donati haric.
-  const txt=(i)=>((i.category||'')+' '+(i.name||''));
-  const isConcrete=(i)=>i.unit==='m3' && /beton|hacim/i.test(txt(i)) && !/gazbeton|gaz\s?beton|kaz[iı]|hafriyat|donat|tugla|siva/i.test(txt(i));
-  const concrete=items.filter(isConcrete).reduce((s,i)=>s+i.quantity,0);
-  const kazi=items.filter((i)=>i.unit==='m3'&&/kaz[iı]|hafriyat/i.test(txt(i))).reduce((s,i)=>s+i.quantity,0);
-  const gaz=items.filter((i)=>/gazbeton|gaz\s?beton/i.test(txt(i))&&i.unit==='m3').reduce((s,i)=>s+i.quantity,0);
+  const us=items.some((i)=>['CY','SF','LF','EA'].includes(i.unit)) || items.every((i)=>i.unit!=='m'&&i.unit!=='m²'&&i.unit!=='m³');
+  const sumG=(fn)=>items.filter(fn).reduce((s,i)=>s+i.quantity,0);
+  const lenT=sumG((i)=>i.unit==='m'||i.unit==='LF');
+  const areaT=sumG((i)=>i.unit==='m²'||i.unit==='SF');
+  const concrete=items.filter(isConcreteItem).reduce((s,i)=>s+i.quantity,0);
+  const cnt=sumG((i)=>i.unit==='EA');
+  const t=(i)=>((i.category||'')+' '+(i.name||''));
+  const volU=us?'CY':'m³';
+  const kazi=items.filter((i)=>(i.unit===volU)&&/kaz[iı]|hafriyat|excavation/i.test(t(i))).reduce((s,i)=>s+i.quantity,0);
+  const gaz=items.filter((i)=>/gazbeton|gaz\s?beton|cmu|masonry/i.test(t(i))&&(i.unit===volU)).reduce((s,i)=>s+i.quantity,0);
   const warnings=(resp.summary&&resp.summary.warnings)?resp.summary.warnings.slice():[];
-  if(resp.summary&&resp.summary.notes)warnings.push('AI notu: '+resp.summary.notes);
-  if(kazi>0)warnings.push('Kazı/hafriyat ≈ '+r(kazi)+' m³ — beton toplamına DAHİL DEĞİL.');
-  if(gaz>0)warnings.push('Gazbeton duvar ≈ '+r(gaz)+' m³ — farklı malzeme, beton toplamına dahil değil.');
-  warnings.unshift('"Beton" toplamı yalnızca yapısal betondur (kazı, gazbeton, donatı hariç). Sonuçlar PDF/görüntüden AI ile TAHMİNİdir; kesinlik için DXF kullanın.');
-  return {unit:(resp.scale||'AI-tahmini'),items,totals:{length_m:r(sum('m')),area_m2:r(sum('m2')),volume_m3:r(concrete),count:sum('adet')},warnings,entityCount:'AI'};
+  if(resp.summary&&resp.summary.notes)warnings.push((us?'AI note: ':'AI notu: ')+resp.summary.notes);
+  if(kazi>0)warnings.push((us?'Excavation ≈ ':'Kazı ≈ ')+r(kazi)+' '+volU+(us?' — NOT included in concrete total.':' — beton toplamına DAHİL DEĞİL.'));
+  if(gaz>0)warnings.push((us?'Masonry/CMU ≈ ':'Gazbeton ≈ ')+r(gaz)+' '+volU+(us?' — separate material.':' — beton toplamına dahil değil.'));
+  warnings.unshift(us
+    ?'Concrete total is structural concrete only (excavation, masonry, rebar excluded). AI estimate from PDF/image — verify against the drawing; DXF is exact.'
+    :'"Beton" toplamı yalnızca yapısal betondur (kazı, gazbeton, donatı hariç). Sonuçlar AI TAHMİNİdir; kesinlik için DXF kullanın.');
+  return {unit:(resp.scale||(us?'US (AI)':'AI-tahmini')),items,
+    uLabels:us?{len:'LF',area:'SF',vol:'CY'}:{len:'m',area:'m²',vol:'m³'},
+    volUnit:us?'CY':'m3',
+    totals:{length_m:r(lenT),area_m2:r(areaT),volume_m3:r(concrete),count:cnt},warnings,entityCount:'AI'};
 }
 async function uploadToServer(file){
   clearError();
@@ -445,7 +481,7 @@ async function uploadToServer(file){
   setBusy(true);
   try{
     const base=window.METRAJ_API||''; // boş = aynı sunucu (backend bu sayfayı sunuyorsa)
-    const form=new FormData(); form.append('file',file);
+    const form=new FormData(); form.append('file',file); form.append('unitSystem',unitSys==='us'?'US':'metric');
     const res=await fetch(base+'/api/metraj/analyze',{method:'POST',body:form});
     const data=await res.json().catch(()=>({message:'Sunucudan geçersiz yanıt.'}));
     if(!res.ok) throw new Error(data.message||('Sunucu hatası ('+res.status+')'));
@@ -481,6 +517,8 @@ async function saveFile(bytes,filename,mime){
   setTimeout(()=>URL.revokeObjectURL(url),120000);
 }
 
+$('us-metric').addEventListener('click',()=>setUnitSys('metric'));
+$('us-us').addEventListener('click',()=>setUnitSys('us'));
 $('pick').addEventListener('click',()=>$('file').click());
 $('file').addEventListener('change',(e)=>readFile(e.target.files[0]));
 const drop=$('drop');
@@ -493,13 +531,14 @@ $('dl-xlsx').addEventListener('click',()=>{if(!current)return;const bytes=buildX
 $('dl-csv').addEventListener('click',()=>{if(!current)return;const head=['No','Poz / Eleman','Kategori','Katman','Miktar','Birim'];const lines=[head.join(';')];current.items.forEach((it,i)=>lines.push([i+1,'"'+it.name.replace(/"/g,'""')+'"',it.category,'"'+it.layer.replace(/"/g,'""')+'"',String(it.quantity).replace('.',','),uLabel(it.unit)].join(';')));const csv='﻿'+lines.join('\r\n');saveFile(new TextEncoder().encode(csv),currentName+'.csv','text/csv;charset=utf-8');});
 $('dl-beton').addEventListener('click',async ()=>{
   if(!current)return;
-  const t=(i)=>((i.category||'')+' '+(i.name||''));
-  const rows=(current.items||[]).filter((i)=>i.unit==='m3' && /beton|hacim/i.test(t(i)) && !/gazbeton|gaz\s?beton|kaz[iı]|hafriyat|donat|tugla|siva/i.test(t(i)))
+  const rows=(current.items||[]).filter(isConcreteItem)
     .map((i)=>({name:i.name,cls:i.cls||'',formula:i.formula||i.layer||'',volume:i.quantity}));
-  if(!rows.length){ showError('Beton kalemi bulunamadı. Beton cetveli için m³ beton kalemi gerekir — DXF\'te beton kalınlığı girin ya da PDF/fotoğrafı AI ile analiz edin.'); return; }
+  if(!rows.length){ showError('Beton kalemi bulunamadı. Beton cetveli için beton kalemi gerekir — DXF\'te beton kalınlığı girin ya da PDF/fotoğrafı AI ile analiz edin.'); return; }
+  const target=unitSys==='us'?'CY':'m3';
+  const inputUnit=(current&&current.volUnit)?current.volUnit:'m3';
   try{
     const base=window.METRAJ_API||'';
-    const res=await fetch(base+'/api/metraj/concrete-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:currentName,rows,unit:'CY'})});
+    const res=await fetch(base+'/api/metraj/concrete-excel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({project:currentName,rows,unit:target,inputUnit})});
     if(!res.ok){const d=await res.json().catch(()=>({}));throw new Error(d.message||('Sunucu hatası '+res.status));}
     const buf=new Uint8Array(await res.arrayBuffer());
     saveFile(buf,(currentName||'beton-cetveli')+'-BETON.xlsx','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');

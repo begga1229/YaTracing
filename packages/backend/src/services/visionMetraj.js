@@ -87,6 +87,43 @@ Sana verilen insaat cizimini (mimari/statik pafta) dikkatle incele ve ELEMAN-ELE
 - "notes" alanina: kullandigin olcek, kat alani ve toplam beton / kat alani oranini yaz.
 - Tum metin ciktilarini Turkce yaz.`;
 
+// ABD (imperial) cizimler icin US-native metraj: feet formulleri, hacim CY (=ft3/27)
+const SYSTEM_PROMPT_US = `You are an experienced US construction quantity-takeoff and concrete estimator.
+Carefully read the drawing and produce an ELEMENT-BY-ELEMENT concrete takeoff using US customary units.
+
+## Method (follow in order)
+1. Find the SCALE (e.g. 1/4"=1'-0", 1/8"=1'-0") and read dimension strings (feet-inches, e.g. 12'-6").
+   Convert every dimension to DECIMAL FEET (12'-6" = 12.5 ft). If no scale, say so clearly.
+2. Compute concrete for EACH structural element separately, NOT one lump sum:
+   - Mud slab / lean concrete
+   - Footings (spread footing + pier/pedestal)
+   - Columns
+   - Beams / grade beams
+   - Slab / deck
+   - Walls / shear walls
+   - Slab-on-grade
+3. For each element: read DIMENSIONS in feet, COUNT the quantity, and give an explicit formula.
+   Concrete VOLUME must be in CUBIC YARDS (CY): volume_CY = (length_ft x width_ft x height_ft x count) / 27.
+   Put the FULL formula in decimal FEET with the /27 in "note" (e.g. "5.9 x 5.9 x 1.3 x 12 / 27").
+4. Units and categories (do NOT mix - totals are split by these):
+   - Structural CONCRETE (mud slab, footings, columns, beams, slab, walls): category = "Concrete", unit = "CY".
+   - EXCAVATION: category = "Excavation", unit = "CY" (this is soil, NOT concrete).
+   - REBAR / steel: category = "Rebar", unit = "ton" (never CY).
+   - CMU / masonry / stud wall: category = "Wall", unit = "SF" or "CY" (not structural concrete).
+   - Formwork: category = "Formwork", unit = "SF". Lengths: unit = "LF". Counts: unit = "EA".
+
+## Sanity check (prevent hallucination)
+- Total concrete vs building floor area should be reasonable: typically ~0.008-0.025 CY per SF of floor.
+  If far outside (e.g. 0.06 CY/SF), you made an error - recheck dimensions and counts.
+- Do not double-count (e.g. column inside slab).
+- For unclear dimensions make a reasonable assumption; note it in "note" and "warnings". Never invent large numbers.
+
+## Output
+- One "items" entry per element. Put the FEET formula (with /27) in "note".
+- For each concrete item set "concrete_class" to the US class if shown (e.g. "3000 psi", "4000 psi"); otherwise assume and add to warnings.
+- In "notes": scale used, floor area (SF), and total concrete / floor area ratio (CY/SF).
+- Write all text output in English (US construction terms).`;
+
 const mediaTypeFor = (mimetype = '', fileName = '') => {
   const lower = (mimetype || '').toLowerCase();
   if (lower.includes('pdf')) return { kind: 'pdf', media: 'application/pdf' };
@@ -111,7 +148,9 @@ const mediaTypeFor = (mimetype = '', fileName = '') => {
  * @param {string} [instructions] - kullanicidan ek talimat
  * @returns {{ items: Array, summary: Object, scale: string }}
  */
-export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instructions = '') => {
+export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instructions = '', unitSystem = 'metric') => {
+  const isUS = String(unitSystem).toUpperCase() === 'US';
+  const systemPrompt = isUS ? SYSTEM_PROMPT_US : SYSTEM_PROMPT;
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     const err = new Error(
@@ -135,14 +174,15 @@ export const analyzeVisionMetraj = async (buffer, mimetype, fileName = '', instr
     ? { type: 'document', source: { type: 'base64', media_type: target.media, data: base64 } }
     : { type: 'image', source: { type: 'base64', media_type: target.media, data: base64 } };
 
-  const userText = instructions
-    ? `Bu insaat cizimini metraj cikaracak sekilde analiz et. Ek talimat: ${instructions}`
+  const baseText = isUS
+    ? 'Analyze this construction drawing and produce a concrete takeoff in US units (feet formulas, volume in CY).'
     : 'Bu insaat cizimini metraj cikaracak sekilde analiz et.';
+  const userText = instructions ? `${baseText} ${isUS ? 'Note' : 'Ek talimat'}: ${instructions}` : baseText;
 
   const response = await client.messages.create({
     model: MODEL,
     max_tokens: 16000,
-    system: SYSTEM_PROMPT,
+    system: systemPrompt,
     thinking: { type: 'adaptive' },
     output_config: {
       effort: 'high',

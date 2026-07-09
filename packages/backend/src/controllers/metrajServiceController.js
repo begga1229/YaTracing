@@ -22,7 +22,10 @@ export const analyzePublic = async (req, res) => {
     if (isDxf) {
       result = parseDxfMetraj(f.buffer.toString('utf8'), f.originalname);
     } else {
-      result = await analyzeVisionMetraj(f.buffer, f.mimetype, f.originalname, req.body.instructions || '');
+      result = await analyzeVisionMetraj(
+        f.buffer, f.mimetype, f.originalname,
+        req.body.instructions || '', req.body.unitSystem || 'metric'
+      );
     }
 
     return res.json({ source: isDxf ? 'dxf' : 'vision', fileName: f.originalname || '', ...result });

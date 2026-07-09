@@ -13,15 +13,19 @@ import ExcelJS from 'exceljs';
  * @returns {Promise<Buffer>}
  */
 export const buildConcreteExcel = async (data) => {
-  // Hesap tabani m3; cikti CY (cubic yard / yd3) veya m3 olabilir.
+  // Cikti birimi (etiket) ve giris biriminden tek noktada donusum (cift donusum yok).
   const unit = (data.unit || 'CY').toUpperCase() === 'M3' ? 'm3' : 'CY';
-  const F = unit === 'CY' ? 1.307950619 : 1;         // 1 m3 = 1.307950619 CY
+  const inputUnit = (data.inputUnit || 'm3').toUpperCase() === 'CY' ? 'CY' : 'm3';
+  const K = 1.307950619;                             // 1 m3 = 1.307950619 CY
+  const toM3 = (v) => (inputUnit === 'CY' ? v / K : v);
+  const toOut = (m3) => (unit === 'CY' ? m3 * K : m3);
+  const conv = (v) => toOut(toM3(Number(v) || 0));
   const uLabel = unit === 'CY' ? 'CY (yd³)' : 'м³';
   const rows = (data.rows || []).map((r) => ({
     name: r.name || '',
     cls: r.cls || '',
     formula: r.formula || '',
-    volume: (Number(r.volume) || 0) * F,             // CY'ye cevrilmis
+    volume: conv(r.volume),
   }));
 
   const wb = new ExcelJS.Workbook();
@@ -141,7 +145,7 @@ export const buildConcreteExcel = async (data) => {
   const notes = data.notes && data.notes.length ? data.notes : [
     'Объёмы даны как «бетон в деле» (чистый геометрический объём), без коэффициентов на потери/добор.',
     'Значения рассчитаны по размерам, снятым с чертежа; проверьте размеры перед применением.',
-    ...(unit === 'CY' ? ['Объёмы приведены в кубических ярдах (CY): 1 м³ = 1.30795 CY. Формулы даны в метрах (м³).'] : []),
+    ...(unit === 'CY' ? ['Объёмы в CY (куб. ярд): 1 CY = 27 ft³ = 0.7646 м³.'] : []),
   ];
   ws.mergeCells(`A${r}:E${r}`);
   ws.getCell(`A${r}`).value = 'ПРИМЕЧАНИЯ И ДОПУЩЕНИЯ';
