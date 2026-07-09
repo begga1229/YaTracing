@@ -128,6 +128,7 @@
   .ctrl-row input:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); outline-offset: 1px; border-color: var(--accent); }
   .unitbox { display: flex; align-items: center; padding: 0 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface-2); color: var(--muted); font-family: ui-monospace, Menlo, monospace; }
   .hint { margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+  .detected { margin: 10px 0 0; font-size: 13px; font-weight: 600; color: #1e7d57; background: color-mix(in srgb, #1e7d57 12%, transparent); border: 1px solid color-mix(in srgb, #1e7d57 35%, transparent); border-radius: 8px; padding: 8px 12px; }
 
   /* Summary tiles */
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(148px, 1fr)); gap: 12px; margin-top: 18px; }
@@ -194,7 +195,8 @@
         <input id="thk" type="number" inputmode="decimal" min="0" step="1" placeholder="ör. 15" />
         <span class=" unitbox">cm</span>
       </div>
-      <p class="hint">Kapalı alanlardan (döşeme, temel, perde) <strong>m³ beton</strong> hesaplar. Çizimde 3B kalınlık (kod 39) varsa otomatik o kullanılır.</p>
+      <p class="hint">Kapalı alanlardan (döşeme, temel, perde) <strong>m³ beton</strong> hesaplar. Çizimdeki not/etiket (ör. "DÖŞEME h=15"), katman adı (ör. "DOSEME_15") veya 3B kalınlık varsa <strong>otomatik okunur</strong>.</p>
+      <p id="detected" class="detected hidden"></p>
     </div>
 
     <div class="tiles">
@@ -257,6 +259,8 @@ function parseDxf(text){
     if(section==='ENTITIES'&&cur){const num=parseFloat(value);
       switch(code){
         case 8:cur.layer=value;break;
+        case 1:cur.text=(cur.text||'')+value;break;
+        case 3:cur.text=(cur.text||'')+value;break;
         case 2:cur.block=value;break;
         case 70:cur.flag=parseInt(value,10)||0;break;
         case 39:cur.thick=num;break;
@@ -273,6 +277,21 @@ function parseDxf(text){
   }
   push();
   return {insUnits,entities};
+}
+function detectThickness(parsed){
+  const toM=(raw,unit)=>{const val=parseFloat(String(raw).replace(',','.'));if(!Number.isFinite(val)||val<=0)return null;if(unit){const u=unit.toLowerCase();if(u==='cm')return val/100;if(u==='mm')return val/1000;if(u==='m')return val<=2?val:null;}if(val>=5&&val<=60)return val/100;if(val>0&&val<2)return val;return null;};
+  const sources=[];for(const e of parsed.entities){if((e.type==='TEXT'||e.type==='MTEXT')&&e.text)sources.push(e.text);}for(const n of new Set(parsed.entities.map(e=>e.layer)))sources.push(n);
+  const cands=[];const push=(r,u,s)=>{const m=toM(r,u);if(m)cands.push({m,src:s});};
+  const reKw=/(?:kal[iı]nl[iı]k|d[öo][şs]eme|pl[aâ]k|temel|d[öo][şs])\s*[=:_\-]?\s*(\d+(?:[.,]\d+)?)\s*(cm|mm|m)?/gi;
+  const reHT=/\b[hHtT]\s*[=:]\s*(\d+(?:[.,]\d+)?)\s*(cm|mm|m)?/g;
+  const reUnit=/(\d+(?:[.,]\d+)?)\s*(cm|mm)\b/gi;
+  const reLayer=/(?:doseme|d[öo][şs]eme|plak|temel|kal)[_\-]?(\d{1,3})/i;
+  for(const s of sources){if(!s)continue;let m;reKw.lastIndex=0;while((m=reKw.exec(s)))push(m[1],m[2],s);reHT.lastIndex=0;while((m=reHT.exec(s)))push(m[1],m[2],s);reUnit.lastIndex=0;while((m=reUnit.exec(s)))push(m[1],m[2],s);const lm=reLayer.exec(s);if(lm)push(lm[1],null,s);}
+  if(!cands.length)return null;
+  const count=new Map();for(const c of cands){const k=c.m.toFixed(3);count.set(k,(count.get(k)||0)+1);}
+  let best=null,bestN=0;for(const [k,n] of count)if(n>bestN){bestN=n;best=k;}
+  const chosen=cands.find(c=>c.m.toFixed(3)===best);
+  return {thicknessM:parseFloat(best),source:chosen.src,matches:cands.length};
 }
 const U2M={0:1,1:0.0254,2:0.3048,3:1609.344,4:0.001,5:0.01,6:1,7:1000,10:0.9144,14:0.1};
 const UNAME={0:'birimsiz',1:'inch',2:'ft',3:'mil',4:'mm',5:'cm',6:'m',7:'km',10:'yard',14:'dm'};
@@ -366,10 +385,16 @@ function handleText(text,name){
     clearError();
     currentName=(name||'metraj').replace(/\.dxf$/i,'');
     lastParsed=parseDxf(text);
+    // Kalınlığı çizimden otomatik oku (yazı/not/katman adı). Kullanıcı boş bıraktıysa uygula.
+    const det=detectThickness(lastParsed);
+    if(det && !(parseFloat($('thk').value)>0)){ $('thk').value=Math.round(det.thicknessM*10000)/100; showDetected(det); }
+    else hideDetected();
     current=computeMetraj(lastParsed,{thicknessM:thicknessM()});
     render(current);
   }catch(err){showError('Çizim çözümlenemedi: '+(err&&err.message?err.message:err));}
 }
+function showDetected(det){const el=$('detected');el.textContent='✓ Kalınlık çizimden otomatik okundu: '+(Math.round(det.thicknessM*10000)/100)+' cm (kaynak: "'+det.source+'"). Gerekirse değiştirin.';el.classList.remove('hidden');}
+function hideDetected(){$('detected').classList.add('hidden');}
 function recompute(){
   if(!lastParsed)return;
   current=computeMetraj(lastParsed,{thicknessM:thicknessM()});
