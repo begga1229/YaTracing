@@ -423,10 +423,18 @@ function adaptVision(resp){
   });
   const sum=(u)=>items.filter((i)=>i.unit===u).reduce((s,i)=>s+i.quantity,0);
   const r=(n)=>Math.round(n*1000)/1000;
+  // "Beton" toplami YALNIZCA yapisal beton olsun: kazi/gazbeton/donati haric.
+  const txt=(i)=>((i.category||'')+' '+(i.name||''));
+  const isConcrete=(i)=>i.unit==='m3' && /beton|hacim/i.test(txt(i)) && !/gazbeton|gaz\s?beton|kaz[iı]|hafriyat|donat|tugla|siva/i.test(txt(i));
+  const concrete=items.filter(isConcrete).reduce((s,i)=>s+i.quantity,0);
+  const kazi=items.filter((i)=>i.unit==='m3'&&/kaz[iı]|hafriyat/i.test(txt(i))).reduce((s,i)=>s+i.quantity,0);
+  const gaz=items.filter((i)=>/gazbeton|gaz\s?beton/i.test(txt(i))&&i.unit==='m3').reduce((s,i)=>s+i.quantity,0);
   const warnings=(resp.summary&&resp.summary.warnings)?resp.summary.warnings.slice():[];
   if(resp.summary&&resp.summary.notes)warnings.push('AI notu: '+resp.summary.notes);
-  warnings.unshift('Bu sonuçlar PDF/görüntüden yapay zeka ile TAHMİNİ çıkarıldı; kesin metraj için DXF kullanın ve değerleri kontrol edin.');
-  return {unit:(resp.scale||'AI-tahmini'),items,totals:{length_m:r(sum('m')),area_m2:r(sum('m2')),volume_m3:r(sum('m3')),count:sum('adet')},warnings,entityCount:'AI'};
+  if(kazi>0)warnings.push('Kazı/hafriyat ≈ '+r(kazi)+' m³ — beton toplamına DAHİL DEĞİL.');
+  if(gaz>0)warnings.push('Gazbeton duvar ≈ '+r(gaz)+' m³ — farklı malzeme, beton toplamına dahil değil.');
+  warnings.unshift('"Beton" toplamı yalnızca yapısal betondur (kazı, gazbeton, donatı hariç). Sonuçlar PDF/görüntüden AI ile TAHMİNİdir; kesinlik için DXF kullanın.');
+  return {unit:(resp.scale||'AI-tahmini'),items,totals:{length_m:r(sum('m')),area_m2:r(sum('m2')),volume_m3:r(concrete),count:sum('adet')},warnings,entityCount:'AI'};
 }
 async function uploadToServer(file){
   clearError();

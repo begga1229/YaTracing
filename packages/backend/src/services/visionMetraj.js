@@ -64,8 +64,13 @@ Sana verilen insaat cizimini (mimari/statik pafta) dikkatle incele ve ELEMAN-ELE
 3. Her eleman icin: BOYUTLARI cizimden oku, ADEDI cizimden say, ve hacmi ac acik formulle hesapla:
    hacim = en x boy x yukseklik x adet.
    Bu formulu MUTLAKA "note" alanina yaz (or. "0.4 x 0.4 x 4.2 x 12 kolon").
-4. Birimler: uzunluk "m", alan "m2", BETON HACMI "m3", kapi/pencere/adetli seyler "adet".
-   Her beton elemani icin category = "Beton" ve unit = "m3" kullan.
+4. Birimler ve kategoriler (KARISTIRMA - toplamlar buna gore ayrilir):
+   - Yapisal BETON elemanlari (grobeton, temel, kolon, kiris, doseme, perde): category = "Beton", unit = "m3".
+   - KAZI / hafriyat: category = "Kazi", unit = "m3" (bu TOPRAK, beton DEGIL - beton toplamina katma).
+   - DONATI / demir: category = "Donati", unit = "ton" (kg ise 1000'e bol; ASLA m3 yazma).
+   - GAZBETON / tugla / duvar orgusu: category = "Duvar", unit = "m3" veya "m2" (bu beton DEGIL, ayri malzeme).
+   - Kalip: category = "Kalip", unit = "m2". Siva/boya: category = "Siva", unit = "m2".
+   - Uzunluk "m", kapi/pencere gibi sayilabilir seyler "adet".
 
 ## Mantik kontrolu (halusinasyonu onlemek icin)
 - Toplam beton, yapinin doseme alanina gore MAKUL olmali: tipik olarak kat alaninin
