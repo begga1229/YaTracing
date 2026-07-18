@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "exayard": {
+      "type": "http",
+      "url": "https://api.exayard.com/mcp"
+    }
+  }
+}
